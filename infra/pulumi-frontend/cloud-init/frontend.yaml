@@ -1,0 +1,47 @@
+#cloud-config
+# ─────────────────────────────────────────────
+# MaquiFront: instala Nginx y lo configura para:
+#   /          -> archivos de React (client/dist) en /var/www/app
+#   /api/...   -> proxy al NestJS de MaquiBack (incluye el WebSocket /api/socket.io)
+# __BACKEND_IP__ lo reemplaza index.ts con la IP privada de MaquiBack
+# ─────────────────────────────────────────────
+
+package_update: true
+packages:
+  - nginx
+
+write_files:
+  - path: /etc/nginx/sites-available/default
+    content: |
+      server {
+        listen 80 default_server;
+        root /var/www/app;
+        index index.html;
+
+        # Para que se suban fotos/archivos grandes (la app manda hasta 10mb de JSON)
+        client_max_body_size 20m;
+
+        # React Router: cualquier ruta que no sea un archivo devuelve index.html
+        location / {
+          try_files $uri $uri/ /index.html;
+        }
+
+        # API + WebSocket. SIN "/" al final del proxy_pass:
+        # así /api/login llega a NestJS como /api/login (tu app usa setGlobalPrefix('api'))
+        location /api/ {
+          proxy_pass http://__BACKEND_IP__:3000;
+          proxy_http_version 1.1;
+          proxy_set_header Upgrade $http_upgrade;   # necesario para socket.io
+          proxy_set_header Connection "upgrade";
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_read_timeout 3600s;                 # que el WebSocket no se corte
+        }
+      }
+
+runcmd:
+  # Carpeta del build de React, con dueño azureuser para poder subir archivos con scp
+  - mkdir -p /var/www/app
+  - echo "<h1>MaquiFront (Pulumi) lista. Falta subir client/dist</h1>" > /var/www/app/index.html
+  - chown -R azureuser:azureuser /var/www/app
+  - systemctl restart nginx

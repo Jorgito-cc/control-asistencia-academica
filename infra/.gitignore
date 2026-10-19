@@ -1,0 +1,19 @@
+# Plugins descargados (como node_modules). Se regeneran con "terraform init"
+.terraform/
+
+# State: guarda en texto plano todo lo que crea Terraform, incluidos los secretos
+*.tfstate
+*.tfstate.*
+
+# Planes guardados con "terraform plan -out" (también pueden tener secretos)
+*.tfplan
+
+# Logs de errores de Terraform
+crash.log
+crash.*.log
+
+# Archivos de variables con secretos
+secrets.tfvars
+*.secret.tfvars
+
+# OJO: .terraform.lock.hcl NO se ignora. Es como package-lock.json y sí se sube

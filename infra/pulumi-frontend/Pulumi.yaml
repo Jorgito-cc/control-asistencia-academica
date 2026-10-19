@@ -1,0 +1,10 @@
+name: maquifront
+description: MaquiFront (frontend) del control de asistencia
+runtime:
+  name: nodejs
+  options:
+    packagemanager: npm
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: azure-typescript

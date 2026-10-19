@@ -1,0 +1,55 @@
+#cloud-config
+# ─────────────────────────────────────────────
+# MaquiBack: instala PostgreSQL + Node.js 22 + pm2
+# y deja listo el .env de NestJS en /opt/app
+# Los $${...} los reemplaza Terraform (templatefile).
+# OJO: en un comentario se escribe $$ doble; si no, Terraform lo toma como variable
+# ─────────────────────────────────────────────
+
+package_update: true
+packages:
+  - postgresql # PostgreSQL 16 de Ubuntu 24.04; escucha solo en localhost por defecto
+  - curl
+
+write_files:
+  # Variables de entorno de NestJS (las mismas que tu server/.env.example)
+  - path: /opt/app/.env
+    permissions: "0600" # solo el dueño puede leerlo
+    content: |
+      PORT=3000
+      CORS_ORIGIN=http://localhost:5173
+
+      DB_HOST=localhost
+      DB_PORT=5432
+      DB_USER=app
+      DB_PASSWORD=${db_password}
+      DB_NAME=asistencia
+
+      JWT_SECRET=${jwt_secret}
+      JWT_EXPIRES_IN=8h
+
+      APP_TZ=America/La_Paz
+
+      ADMIN_EMAIL=${admin_email}
+      ADMIN_PASSWORD=${admin_password}
+      ADMIN_NAME=Administrador
+
+runcmd:
+  # Swap de 2 GB: margen de memoria para que npm no se quede sin RAM
+  - fallocate -l 2G /swapfile
+  - chmod 600 /swapfile
+  - mkswap /swapfile
+  - swapon /swapfile
+  - echo '/swapfile none swap sw 0 0' >> /etc/fstab
+
+  # Node.js 22 (repositorio oficial de NodeSource) + pm2 para dejar la API corriendo
+  - curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+  - apt-get install -y nodejs
+  - npm install -g pm2
+
+  # Base de datos y usuario de la app
+  - [sudo, -u, postgres, psql, -c, "CREATE USER app WITH PASSWORD '${db_password}';"]
+  - [sudo, -u, postgres, psql, -c, "CREATE DATABASE asistencia OWNER app;"]
+
+  # La carpeta de la app pertenece a azureuser (para poder subir con scp y correr pm2)
+  - chown -R azureuser:azureuser /opt/app
