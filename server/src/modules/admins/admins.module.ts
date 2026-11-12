@@ -7,16 +7,18 @@ import { EnsureDefaultAdminUseCase } from './application/ensure-default-admin.us
 import { PasswordHasher } from './application/password-hasher.port';
 import { AdminRepository } from './domain/admin.repository';
 import { DefaultAdminSeeder } from './infrastructure/default-admin.seeder';
+import { AdminInvitationsController } from './infrastructure/http/admin-invitations.controller';
 import { ProfileController } from './infrastructure/http/profile.controller';
 import { TeacherController } from './infrastructure/http/teacher.controller';
 import { AcademicModulesModule } from '../academic-modules/academic-modules.module';
 import { AdminOrmEntity } from './infrastructure/persistence/admin.orm-entity';
+import { AdminInvitationsService } from './infrastructure/persistence/admin-invitations.service';
 import { TypeormAdminRepository } from './infrastructure/persistence/typeorm-admin.repository';
 import { BcryptPasswordHasher } from './infrastructure/security/bcrypt-password.hasher';
 
 @Module({
   imports: [TypeOrmModule.forFeature([AdminOrmEntity]), AcademicModulesModule, ActivityModule],
-  controllers: [ProfileController, TeacherController],
+  controllers: [ProfileController, TeacherController, AdminInvitationsController],
   providers: [
     { provide: AdminRepository, useClass: TypeormAdminRepository },
     { provide: PasswordHasher, useClass: BcryptPasswordHasher },
@@ -24,6 +26,7 @@ import { BcryptPasswordHasher } from './infrastructure/security/bcrypt-password.
     DefaultAdminSeeder,
     AdminProfileService,
     ChangePasswordUseCase,
+    AdminInvitationsService,
   ],
   exports: [AdminRepository, PasswordHasher],
 })

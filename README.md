@@ -113,6 +113,44 @@ El administrador inicial se crea **solo si no existe**. Si después cambias `ADM
 El archivo `server/.env` está en `server/.gitignore` y no se sube al repositorio. Solo se versiona
 `server/.env.example`, que debe contener valores de ejemplo y no contraseñas reales.
 
+### Plataforma y asistencia desde el mismo proyecto
+
+React usa `VITE_APP_MODE` (en `client/.env.local`). El mismo backend NestJS usa `APP_MODE`
+(en `server/.env`). Usa el mismo modo en ambos para el entorno que quieras levantar.
+
+| Modo | Frontend y backend |
+|---|---|
+| `combined` | Plataforma y asistencia de una institución en la misma demo local. Vite usa este modo por defecto. NestJS lo infiere si está definida `PLATFORM_DATABASE_URL` y se omite `APP_MODE`. |
+| `platform` | Página pública de planes, solicitudes y panel del equipo operador. Usa la base central. |
+| `tenant` | Asistencia de una institución. Usa su base académica. NestJS usa este modo si se omiten `APP_MODE` y `PLATFORM_DATABASE_URL`. |
+
+Para la demo local, configura `APP_MODE=combined`, la conexión central
+`PLATFORM_DATABASE_URL` y el operador con `PLATFORM_ADMIN_EMAIL`, `PLATFORM_ADMIN_NAME`
+y `PLATFORM_ADMIN_PASSWORD`. Configura también `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`,
+`DB_PASSWORD` y `JWT_SECRET` para asistencia. La base central guarda planes, solicitudes e
+instituciones. La base académica guarda usuarios, módulos y asistencias de la institución.
+Usa dos bases de PostgreSQL con sus propias credenciales, aunque estén en el mismo servidor local.
+
+Con las dos aplicaciones de los pasos anteriores en marcha, abre `http://localhost:5173`.
+
+| Ruta | Para qué sirve |
+|---|---|
+| `/` | Ver los planes y solicitar el alta de una institución en modo `platform` o `combined`. |
+| `/seguimiento/:token` | Consultar el estado de una solicitud con su enlace de seguimiento. |
+| `/plataforma/login` | Ingresar como operador de la plataforma. |
+| `/login` | Ingresar a asistencia como estudiante o administrador de la institución. |
+| `/activar` | Definir la contraseña del administrador de la institución mediante el enlace de invitación. |
+
+Para probar invitaciones, habilita en `PLATFORM_TENANT_ORIGINS` el origen de la app académica
+y configura en su backend `PLATFORM_TENANT_SLUG` y `PLATFORM_BOOTSTRAP_KEY`. Usa el mismo
+nombre de host que figura en el enlace de la institución.
+
+En el despliegue del práctico, el código del mismo repositorio se despliega en modo `tenant`
+con tres servidores por institución. Uno sirve React, otro ejecuta NestJS y el tercero
+aloja su PostgreSQL. La plataforma central se despliega en modo `platform`.
+Queda pendiente conectar el alta de instituciones del panel con el aprovisionamiento de esos
+servidores mediante Terraform.
+
 ---
 
 ## Prueba rápida

@@ -1,6 +1,7 @@
 import type { DataSourceOptions } from 'typeorm';
 import { AcademicModuleOrmEntity } from '../modules/academic-modules/infrastructure/persistence/academic-module.orm-entity';
 import { ActivityLogOrmEntity } from '../modules/activity/infrastructure/persistence/activity-log.orm-entity';
+import { AdminInvitationOrmEntity } from '../modules/admins/infrastructure/persistence/admin-invitation.orm-entity';
 import { AdminOrmEntity } from '../modules/admins/infrastructure/persistence/admin.orm-entity';
 import { AttendanceChangeOrmEntity } from '../modules/attendance/infrastructure/persistence/attendance-change.orm-entity';
 import { AttendanceOrmEntity } from '../modules/attendance/infrastructure/persistence/attendance.orm-entity';
@@ -28,9 +29,11 @@ import { JustificationDays1761000000000 } from './migrations/1761000000000-justi
 import { ClassChangesAndCode1761100000000 } from './migrations/1761100000000-class-changes-and-code';
 import { Notifications1761200000000 } from './migrations/1761200000000-notifications';
 import { ClassHoursOnly1761300000000 } from './migrations/1761300000000-class-hours-only';
+import { AdminInvitation1794441600000 } from './migrations/1794441600000-admin-invitation';
 
 export const ORM_ENTITIES = [
   AdminOrmEntity,
+  AdminInvitationOrmEntity,
   AcademicModuleOrmEntity,
   StudentOrmEntity,
   ClassSessionOrmEntity,
@@ -67,6 +70,7 @@ export function buildDataSourceOptions(
       ClassChangesAndCode1761100000000,
       Notifications1761200000000,
       ClassHoursOnly1761300000000,
+      AdminInvitation1794441600000,
     ],
     synchronize: false,
   };

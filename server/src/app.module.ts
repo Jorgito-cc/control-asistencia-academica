@@ -12,10 +12,15 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { ClassSessionsModule } from './modules/class-sessions/class-sessions.module';
 import { StudentsModule } from './modules/students/students.module';
 import { SharedModule } from './shared/shared.module';
+import { HealthController } from './health.controller';
+import { PlatformModule } from './platform/platform.module';
+
+const applicationConfig = ConfigModule.forRoot({ isGlobal: true });
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    applicationConfig,
+    PlatformModule,
     DatabaseModule,
     SharedModule,
     AdminsModule,
@@ -29,5 +34,9 @@ import { SharedModule } from './shared/shared.module';
     JustificationsModule,
     NotificationsModule,
   ],
+  controllers: [HealthController],
 })
 export class AppModule {}
+
+@Module({ imports: [applicationConfig, PlatformModule] })
+export class PlatformAppModule {}

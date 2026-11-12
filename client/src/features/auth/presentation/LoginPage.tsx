@@ -12,7 +12,7 @@ import {
   UserRound,
 } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { Navigate, useNavigate } from 'react-router'
+import { Navigate, useNavigate, useSearchParams } from 'react-router'
 import { getErrorMessage } from '../../../core/http/api-error'
 import { cn } from '../../../shared/lib/cn'
 import { Spinner, PageLoader } from '../../../shared/ui/Spinner'
@@ -25,7 +25,8 @@ const inputClass = 'h-14! rounded-2xl! pl-11! text-base! sm:text-sm! 2xl:h-16! 2
 
 export function LoginPage() {
   const { status, user, expiredReason } = useAuth()
-  const [tab, setTab] = useState<Role>('STUDENT')
+  const [params] = useSearchParams()
+  const [tab, setTab] = useState<Role>(() => params.get('acceso') === 'administrador' ? 'ADMIN' : 'STUDENT')
 
   if (status === 'loading') return <PageLoader />
   if (user) return <Navigate to={homePathFor(user.role)} replace />

@@ -10,6 +10,7 @@ export class DefaultAdminSeeder implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap() {
+    if (this.config.get<string>('PLATFORM_BOOTSTRAP_KEY') || this.config.get<string>('PLATFORM_TENANT_SLUG')) return;
     const email = this.config.get<string>('ADMIN_EMAIL');
     const password = this.config.get<string>('ADMIN_PASSWORD');
     if (!email || !password) return;
