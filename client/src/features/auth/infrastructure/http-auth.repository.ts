@@ -8,8 +8,8 @@ export class HttpAuthRepository implements AuthRepository {
     return data
   }
 
-  async loginStudent(identifier: string) {
-    const { data } = await http.post<LoginResult>('/auth/student/login', { identifier })
+  async loginStudent(identifier: string, moduleId?: number) {
+    const { data } = await http.post<LoginResult>('/auth/student/login', { identifier, moduleId })
     return data
   }
 

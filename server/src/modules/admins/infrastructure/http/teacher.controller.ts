@@ -5,9 +5,9 @@ import { CurrentUser, Roles } from '../../../../shared/infrastructure/security/d
 import { ActiveModuleService } from '../../../academic-modules/application/active-module.service';
 import { AdminProfileService } from '../../application/admin-profile.use-cases';
 
-/** Docente del módulo activo (el administrador que lo activó), visible también para los estudiantes. */
+/** Perfil del docente asignado al módulo que el usuario puede consultar. */
 @Controller('teacher')
-@Roles('ADMIN', 'STUDENT')
+@Roles('ADMIN', 'TEACHER', 'STUDENT')
 export class TeacherController {
   constructor(
     private readonly activeModule: ActiveModuleService,
@@ -27,10 +27,18 @@ export class TeacherController {
     return new StreamableFile(photo.data, { type: photo.mimeType });
   }
 
-  /** Los estudiantes solo ven al docente de su módulo activo; el admin, el de cualquier módulo. */
   private async findTeacher(user: AuthUser, moduleId?: number) {
-    if (moduleId !== undefined && user.role !== 'ADMIN') throw new ForbiddenError('Sin acceso a otros módulos');
-    const module = await this.activeModule.resolve(moduleId);
+    let module;
+    if (user.role === 'STUDENT') {
+      if (moduleId !== undefined && moduleId !== user.moduleId) {
+        throw new ForbiddenError('Sin acceso a otros módulos');
+      }
+      if (user.moduleId === null) throw new NotFoundError('No hay un módulo activo');
+      module = await this.activeModule.getActiveById(user.moduleId);
+    } else {
+      module = await this.activeModule.resolve(moduleId, user.role === 'TEACHER' ? user.id : undefined);
+    }
+    if (!module) throw new NotFoundError('No hay un módulo activo');
     if (!module.createdBy) return null;
     return this.profiles.get(module.createdBy).catch(() => null);
   }

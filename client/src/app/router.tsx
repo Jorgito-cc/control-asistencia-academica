@@ -17,12 +17,15 @@ import { ProfilePage } from '../features/profile/presentation/ProfilePage'
 import { StudentModulePage } from '../features/student-portal/presentation/StudentModulePage'
 import { StudentProfilePage } from '../features/student-portal/presentation/StudentProfilePage'
 import { StudentsPage } from '../features/students/presentation/StudentsPage'
+import { TeacherModulesPage } from '../features/teachers/presentation/TeacherModulesPage'
+import { TeachersPage } from '../features/teachers/presentation/TeachersPage'
 import PlatformAdmin from '../platform/PlatformAdmin'
 import { PlatformLayout, PlatformNotFound } from '../platform/PlatformLayout'
 import { Landing, Tracking } from '../platform/PublicSite'
 import { AdminLayout } from './layouts/AdminLayout'
 import { AttendanceLayout } from './layouts/AttendanceLayout'
 import { StudentLayout } from './layouts/StudentLayout'
+import { TeacherLayout } from './layouts/TeacherLayout'
 
 const mode = import.meta.env.VITE_APP_MODE
 const platformEnabled = mode !== 'tenant'
@@ -47,6 +50,19 @@ const attendanceRoutes: RouteObject[] = [
     ],
   },
   {
+    element: <RequireRole role="TEACHER" />,
+    children: [
+      {
+        path: '/docente',
+        element: <TeacherLayout />,
+        children: [
+          { index: true, element: <TeacherModulesPage /> },
+          { path: 'nuevo-modulo', element: <NewModulePage /> },
+        ],
+      },
+    ],
+  },
+  {
     element: <RequireRole role="ADMIN" />,
     children: [
       {
@@ -57,6 +73,7 @@ const attendanceRoutes: RouteObject[] = [
           { path: 'asistencias', element: <AttendanceOverviewPage /> },
           { path: 'calendario', element: <ModuleCalendarPage /> },
           { path: 'estudiantes', element: <StudentsPage /> },
+          { path: 'docentes', element: <TeachersPage /> },
           { path: 'justificaciones', element: <JustificationsPage /> },
           { path: 'reportes', element: <ReportsPage /> },
           { path: 'estudiantes/:studentId', element: <StudentAttendancePage /> },

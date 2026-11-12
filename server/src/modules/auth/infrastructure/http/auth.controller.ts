@@ -26,7 +26,7 @@ export class AuthController {
   @Post('student/login')
   @HttpCode(200)
   studentLogin(@Body() body: StudentLoginDto) {
-    return this.loginStudent.execute(body.identifier);
+    return this.loginStudent.execute(body.identifier, body.moduleId);
   }
 
   @Get('me')

@@ -25,6 +25,7 @@ export class EnsureDefaultAdminUseCase {
       email,
       fullName: input.fullName,
       passwordHash: await this.hasher.hash(input.password),
+      role: 'ADMIN',
     });
     this.logger.log(`Administrador inicial creado: ${email}`);
   }

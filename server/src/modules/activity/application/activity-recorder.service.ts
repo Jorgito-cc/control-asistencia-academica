@@ -10,6 +10,7 @@ export interface RecordActivityInput {
   action: ActivityAction;
   description: string;
   moduleId: number | null;
+  previousModuleId?: number;
   studentId?: number | null;
   entity?: string;
   entityId?: number;
@@ -61,12 +62,13 @@ export class ActivityRecorder {
     this.broadcast(input);
   }
 
-  private broadcast({ action, actor, moduleId, studentId }: RecordActivityInput): void {
+  private broadcast({ action, actor, moduleId, previousModuleId, studentId }: RecordActivityInput): void {
     const event = { action };
-    // Al cambiar de módulo, los estudiantes del anterior deben enterarse de que su sesión terminó.
-    if (action === 'ACTIVATE_MODULE') return this.realtime.toEveryone(event);
-
     this.realtime.toAdmins(event);
+    if (action === 'ACTIVATE_MODULE' && previousModuleId !== undefined) {
+      // El cambio invalida las sesiones del módulo que se acaba de cerrar.
+      this.realtime.toModuleStudents(previousModuleId, event);
+    }
     if (actor.role === 'STUDENT') {
       // Sus otras pestañas o dispositivos.
       this.realtime.toStudent(actor.id, event);

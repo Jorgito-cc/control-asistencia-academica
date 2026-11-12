@@ -130,10 +130,12 @@ export class SessionManagementService {
 
   /** Historial de cambios: el admin ve cualquier módulo; el estudiante, solo el suyo activo. */
   async listChanges(user: AuthUser, moduleId?: number) {
-    if (user.role === 'STUDENT' && moduleId !== undefined) throw new ForbiddenError('Sin acceso a otros módulos');
-    const module = await this.activeModule.resolve(moduleId);
-    if (user.role === 'STUDENT' && user.moduleId !== module.id) throw new ForbiddenError('Sin acceso a este módulo');
-    return this.sessions.listChanges(module.id);
+    if (user.role === 'ADMIN') return this.sessions.listChanges((await this.activeModule.resolve(moduleId)).id);
+    if (user.role === 'STUDENT' && moduleId === undefined && user.moduleId !== null) {
+      const module = await this.activeModule.getActiveById(user.moduleId);
+      if (module) return this.sessions.listChanges(module.id);
+    }
+    throw new ForbiddenError('Sin acceso a este módulo');
   }
 
   async getChangeFile(user: AuthUser, changeId: number, fileId: number) {

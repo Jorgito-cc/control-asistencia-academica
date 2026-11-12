@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { IsEmail, IsInt, IsNotEmpty, IsString, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 
 export class AdminLoginDto {
   @IsEmail({}, { message: 'Ingresa un correo válido' })
@@ -14,4 +14,10 @@ export class StudentLoginDto {
   @IsNotEmpty({ message: 'Ingresa tu correo o número de registro' })
   @MaxLength(150)
   identifier: string;
+
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsInt()
+  @Min(1)
+  @Max(2147483647)
+  moduleId?: number;
 }

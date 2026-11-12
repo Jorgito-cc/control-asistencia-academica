@@ -1,4 +1,5 @@
-export type Role = 'ADMIN' | 'STUDENT';
+export type StaffRole = 'ADMIN' | 'TEACHER';
+export type Role = StaffRole | 'STUDENT';
 
 /** Usuario autenticado tal como viaja en el token. */
 export interface AuthUser {

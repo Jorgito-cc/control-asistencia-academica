@@ -17,9 +17,9 @@ import { AdminProfileService, MAX_PHOTO_BYTES } from '../../application/admin-pr
 import { ChangePasswordDto, UpdateProfileDto } from './profile.dto';
 import { ChangePasswordUseCase } from '../../application/change-password.use-case';
 
-/** Perfil del docente (el administrador que ingresó). */
+/** Cada miembro del personal administra su propio perfil. */
 @Controller('profile')
-@Roles('ADMIN')
+@Roles('ADMIN', 'TEACHER')
 export class ProfileController {
   constructor(
     private readonly profiles: AdminProfileService,

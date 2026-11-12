@@ -1,4 +1,4 @@
-export type Role = 'ADMIN' | 'STUDENT'
+export type Role = 'ADMIN' | 'TEACHER' | 'STUDENT'
 
 export interface AuthUser {
   id: number
@@ -14,4 +14,10 @@ export interface LoginResult {
 }
 
 /** Ruta de inicio según el rol. */
-export const homePathFor = (role: Role) => (role === 'ADMIN' ? '/admin' : '/estudiante')
+const homePaths: Record<Role, string> = {
+  ADMIN: '/admin',
+  TEACHER: '/docente',
+  STUDENT: '/estudiante',
+}
+
+export const homePathFor = (role: Role) => homePaths[role]

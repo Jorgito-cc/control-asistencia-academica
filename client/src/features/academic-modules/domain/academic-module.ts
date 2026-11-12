@@ -39,6 +39,7 @@ export interface ExtraField {
 export interface ActiveModule {
   id: number
   name: string
+  teacherId?: number | null
   status: ModuleStatus
   isActive: boolean
   /** null mientras está programado. */

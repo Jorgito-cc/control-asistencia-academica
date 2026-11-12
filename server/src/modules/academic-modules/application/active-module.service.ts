@@ -7,12 +7,17 @@ import { AcademicModuleRepository } from '../domain/academic-module.repository';
 export class ActiveModuleService {
   constructor(private readonly repository: AcademicModuleRepository) {}
 
-  getActive(): Promise<AcademicModule | null> {
-    return this.repository.findActive();
+  getActive(teacherId: number | null = null): Promise<AcademicModule | null> {
+    return this.repository.findActive(teacherId);
   }
 
-  async getActiveOrFail(): Promise<AcademicModule> {
-    const module = await this.repository.findActive();
+  async getActiveById(moduleId: number): Promise<AcademicModule | null> {
+    const module = await this.repository.findById(moduleId);
+    return module?.isActive && module.status === 'ACTIVE' ? module : null;
+  }
+
+  async getActiveOrFail(teacherId: number | null = null): Promise<AcademicModule> {
+    const module = await this.getActive(teacherId);
     if (!module) {
       throw new NotFoundError(
         'No hay un módulo activo. El administrador debe importar estudiantes y fechas.',
@@ -22,15 +27,17 @@ export class ActiveModuleService {
   }
 
   /** Módulo pedido por id (historial) o, si no se indica, el activo. */
-  async resolve(moduleId?: number): Promise<AcademicModule> {
-    if (moduleId === undefined) return this.getActiveOrFail();
+  async resolve(moduleId?: number, teacherId?: number | null): Promise<AcademicModule> {
+    if (moduleId === undefined) return this.getActiveOrFail(teacherId);
     const module = await this.repository.findById(moduleId);
-    if (!module) throw new NotFoundError('El módulo no existe');
+    if (!module || (teacherId !== undefined && module.teacherId !== teacherId)) {
+      throw new NotFoundError('El módulo no existe');
+    }
     return module;
   }
 
-  async getActiveSummary() {
-    const module = await this.repository.findActive();
+  async getActiveSummary(teacherId: number | null = null) {
+    const module = await this.getActive(teacherId);
     return module ? this.repository.summarize(module) : null;
   }
 }

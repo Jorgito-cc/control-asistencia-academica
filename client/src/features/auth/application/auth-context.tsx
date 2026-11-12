@@ -21,7 +21,7 @@ interface AuthContextValue {
   /** Motivo por el que se cerró la sesión automáticamente, para mostrarlo en el login. */
   expiredReason: string | null
   loginAdmin: (email: string, password: string) => Promise<AuthUser>
-  loginStudent: (identifier: string) => Promise<AuthUser>
+  loginStudent: (identifier: string, moduleId?: number) => Promise<AuthUser>
   logout: () => Promise<void>
 }
 
@@ -79,8 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const result = await auth.loginAdmin(email, password)
         return startSession(result.accessToken, result.user)
       },
-      loginStudent: async (identifier) => {
-        const result = await auth.loginStudent(identifier)
+      loginStudent: async (identifier, moduleId) => {
+        const result = await auth.loginStudent(identifier, moduleId)
         return startSession(result.accessToken, result.user)
       },
       logout: async () => {

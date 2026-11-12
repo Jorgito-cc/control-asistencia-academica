@@ -1,4 +1,5 @@
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import type { StaffRole } from '../../../../shared/domain/auth-user';
 
 @Entity('admins')
 export class AdminOrmEntity {
@@ -13,6 +14,9 @@ export class AdminOrmEntity {
 
   @Column({ name: 'full_name', type: 'varchar', length: 150 })
   fullName: string;
+
+  @Column({ type: 'varchar', length: 10, default: 'ADMIN' })
+  role: StaffRole;
 
   @Column({ type: 'varchar', length: 60, nullable: true })
   title: string | null;

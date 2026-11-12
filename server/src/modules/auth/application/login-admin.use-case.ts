@@ -7,7 +7,7 @@ import { PasswordHasher } from '../../admins/application/password-hasher.port';
 import { AdminRepository } from '../../admins/domain/admin.repository';
 import { TokenService } from './token-service.port';
 
-/** RF-02: acceso del administrador con credenciales propias. */
+/** Acceso del personal de la institución con credenciales propias. */
 @Injectable()
 export class LoginAdminUseCase {
   constructor(
@@ -26,17 +26,18 @@ export class LoginAdminUseCase {
 
     const user: AuthUser = {
       id: admin.id,
-      role: 'ADMIN',
+      role: admin.role,
       name: admin.fullName,
       email: admin.email,
       moduleId: null,
     };
-    const module = await this.activeModule.getActive();
+    const isTeacher = admin.role === 'TEACHER';
+    const module = await this.activeModule.getActive(isTeacher ? admin.id : null);
     await this.activity.record({
       actor: user,
       action: 'LOGIN',
       moduleId: module?.id ?? null,
-      description: `${admin.fullName} inició sesión como administrador`,
+      description: `${admin.fullName} inició sesión como ${isTeacher ? 'docente' : 'administrador'}`,
     });
 
     return { accessToken: await this.tokens.sign(user), user };

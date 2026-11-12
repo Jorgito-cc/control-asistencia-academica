@@ -56,18 +56,21 @@ export class ModulesController {
   ) {}
 
   @Get()
-  list() {
-    return this.history.list();
+  @Roles('ADMIN', 'TEACHER')
+  list(@CurrentUser() actor: AuthUser) {
+    return this.history.list(actor.role === 'TEACHER' ? actor.id : undefined);
   }
 
   @Get('active')
-  async active() {
-    return { module: await this.activeModule.getActiveSummary() };
+  @Roles('ADMIN', 'TEACHER')
+  async active(@CurrentUser() actor: AuthUser) {
+    return { module: await this.activeModule.getActiveSummary(actor.role === 'TEACHER' ? actor.id : null) };
   }
 
   @Get(':id')
-  async get(@Param('id', ParseIntPipe) id: number) {
-    return { module: await this.history.get(id) };
+  @Roles('ADMIN', 'TEACHER')
+  async get(@Param('id', ParseIntPipe) id: number, @CurrentUser() actor: AuthUser) {
+    return { module: await this.history.get(id, actor.role === 'TEACHER' ? actor.id : undefined) };
   }
 
   @Patch(':id/schedule')
@@ -95,6 +98,7 @@ export class ModulesController {
   }
 
   @Post('preview')
+  @Roles('ADMIN', 'TEACHER')
   @HttpCode(200)
   @UseInterceptors(importFiles())
   preview(@UploadedFiles() files: ImportUpload = {}) {
@@ -104,8 +108,9 @@ export class ModulesController {
     });
   }
 
-  /** Revalida la vista previa después de que el admin corrige filas a mano. */
+  /** Revalida la vista previa después de corregir filas a mano. */
   @Post('validate')
+  @Roles('ADMIN', 'TEACHER')
   @HttpCode(200)
   validate(@Body() body: ImportDraftDto) {
     const { valid, errors } = validateDraft(body);
@@ -113,14 +118,15 @@ export class ModulesController {
   }
 
   @Post('activate')
-  async activate(@Body() body: ActivateModuleDto, @CurrentUser() admin: AuthUser) {
+  @Roles('ADMIN', 'TEACHER')
+  async activate(@Body() body: ActivateModuleDto, @CurrentUser() actor: AuthUser) {
     const module = await this.activateModule.execute({
       name: body.name,
       confirm: body.confirm,
       scheduledFor: body.scheduledFor ? new Date(body.scheduledFor) : undefined,
       draft: { students: body.students, sessions: body.sessions },
       extraFields: body.extraFields,
-      admin,
+      actor,
     });
     return { module };
   }

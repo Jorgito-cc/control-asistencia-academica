@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { Clock } from '../../../shared/application/clock.port';
-import { DEFAULT_ATTENDANCE_RULES } from '../../../shared/domain/attendance-rules';
 import { ExtraField, normalizeExtraFields, pickExtraValues } from '../../../shared/domain/extra-fields';
 import type { AuthUser } from '../../../shared/domain/auth-user';
 import { BusinessRuleError, ValidationError } from '../../../shared/domain/errors';
@@ -17,7 +16,7 @@ export interface ActivateModuleInput {
   draft: ImportDraft;
   /** Columnas extra del Excel que el admin eligió guardar. */
   extraFields: ExtraField[];
-  admin: AuthUser;
+  actor: AuthUser;
 }
 
 @Injectable()
@@ -43,26 +42,28 @@ export class ActivateModuleUseCase {
 
     const now = this.clock.now();
     const scheduledFor = input.scheduledFor ?? null;
+    const teacherId = input.actor.role === 'TEACHER' ? input.actor.id : null;
+    if (scheduledFor && teacherId !== null) {
+      throw new BusinessRuleError('Los docentes deben activar sus módulos en el momento.');
+    }
     if (scheduledFor && scheduledFor.getTime() <= now.getTime() + 60_000) {
       throw new BusinessRuleError('La fecha programada debe ser al menos un minuto en el futuro');
     }
 
-    const previous = await this.repository.findActive();
-    const module = await this.repository.activateNew({
+    const { module, previous } = await this.repository.activateNew({
       name: input.name.trim(),
-      createdBy: input.admin.id,
+      createdBy: input.actor.id,
+      teacherId,
       students,
       sessions: result.sessions,
       extraFields,
-      // El nuevo módulo hereda las reglas de puntualidad del anterior.
-      rules: previous?.rules ?? DEFAULT_ATTENDANCE_RULES,
       now,
       scheduledFor,
     });
 
     if (scheduledFor) {
       await this.activity.record({
-        actor: input.admin,
+        actor: input.actor,
         action: 'SCHEDULE_MODULE',
         // Se registra en el módulo en curso para que aparezca en su historial de actividades.
         moduleId: previous?.id ?? module.id,
@@ -75,9 +76,10 @@ export class ActivateModuleUseCase {
     }
 
     await this.activity.record({
-      actor: input.admin,
+      actor: input.actor,
       action: 'ACTIVATE_MODULE',
       moduleId: module.id,
+      previousModuleId: previous?.id,
       entity: 'module',
       entityId: module.id,
       description: `Activó el módulo "${module.name}" con ${result.students.length} estudiantes y ${result.sessions.length} fechas`,

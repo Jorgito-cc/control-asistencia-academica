@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Clock } from '../../../shared/application/clock.port';
 import type { AuthUser } from '../../../shared/domain/auth-user';
+import { ForbiddenError } from '../../../shared/domain/errors';
 import { ActiveModuleService } from '../../academic-modules/application/active-module.service';
 import type { NotificationType } from '../domain/notification';
 import { NotificationRepository } from '../domain/notification.repository';
@@ -40,9 +41,9 @@ export class Notifier {
 
   /** Las notificaciones del módulo (por defecto el activo) para quien consulta, con cuántas no leyó. */
   async feed(user: AuthUser, moduleId?: number) {
-    const module = user.role === 'STUDENT' ? await this.activeModule.getActiveOrFail() : await this.activeModule.resolve(moduleId);
-    const scope = { moduleId: module.id, audience: user.role, studentId: user.role === 'STUDENT' ? user.id : undefined };
-    const lastSeen = await this.repository.lastSeen(user.role, user.id, module.id);
+    const { module, audience } = await this.resolveScope(user, moduleId);
+    const scope = { moduleId: module.id, audience, studentId: audience === 'STUDENT' ? user.id : undefined };
+    const lastSeen = await this.repository.lastSeen(audience, user.id, module.id);
     const [items, unread] = await Promise.all([
       this.repository.feed({ ...scope, limit: FEED_LIMIT }),
       this.repository.countSince(scope, lastSeen),
@@ -56,8 +57,19 @@ export class Notifier {
   }
 
   async markSeen(user: AuthUser, moduleId?: number) {
-    const module = user.role === 'STUDENT' ? await this.activeModule.getActiveOrFail() : await this.activeModule.resolve(moduleId);
-    await this.repository.markSeen(user.role, user.id, module.id, this.clock.now());
+    const { module, audience } = await this.resolveScope(user, moduleId);
+    await this.repository.markSeen(audience, user.id, module.id, this.clock.now());
+  }
+
+  private async resolveScope(user: AuthUser, moduleId?: number) {
+    if (user.role === 'ADMIN') {
+      return { module: await this.activeModule.resolve(moduleId), audience: user.role };
+    }
+    if (user.role === 'STUDENT' && user.moduleId !== null) {
+      const module = await this.activeModule.getActiveById(user.moduleId);
+      if (module) return { module, audience: user.role };
+    }
+    throw new ForbiddenError('Sin acceso a las notificaciones de este módulo');
   }
 
   private async save(input: NotifyInput & { audience: 'ADMIN' | 'STUDENT'; studentId: number | null }) {

@@ -1,7 +1,7 @@
 import type { AttendanceRules } from '../../../shared/domain/attendance-rules';
 import type { ExtraField } from '../../../shared/domain/extra-fields';
 
-/** ACTIVE: en uso (solo uno). SCHEDULED: se activará en `scheduledFor`. CLOSED: finalizado, solo lectura. */
+/** ACTIVE: en uso (solo uno por docente o para administración). SCHEDULED: se activará en `scheduledFor`. */
 export type ModuleStatus = 'ACTIVE' | 'SCHEDULED' | 'CLOSED' | 'CANCELLED';
 
 export interface AcademicModule {
@@ -13,8 +13,10 @@ export interface AcademicModule {
   activatedAt: Date | null;
   closedAt: Date | null;
   scheduledFor: Date | null;
-  /** Administrador que activó el módulo; figura como docente. */
+  /** Cuenta que activó el módulo. */
   createdBy: number | null;
+  /** null para los módulos administrados en el flujo histórico. */
+  teacherId: number | null;
   rules: AttendanceRules;
   /** Campos adicionales de los estudiantes de este módulo. */
   extraFields: ExtraField[];

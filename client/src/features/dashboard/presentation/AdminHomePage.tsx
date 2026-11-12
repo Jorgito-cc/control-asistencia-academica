@@ -82,9 +82,10 @@ function NoModuleHero() {
         <div className="grid size-16 place-items-center rounded-2xl bg-brand-soft text-brand shadow-sm">
           <Layers className="size-8" />
         </div>
-        <h2 className="mt-5 text-xl font-extrabold sm:text-2xl">No hay un módulo activo</h2>
+        <h2 className="mt-5 text-xl font-extrabold sm:text-2xl">No tienes un módulo activo</h2>
         <p className="mt-2 text-muted">
-          Importa la lista de estudiantes y las fechas de clase para empezar a registrar asistencias.
+          Activa tu propio módulo o consulta los grupos de los docentes en{' '}
+          <Link to="/admin/modulos" className="font-semibold text-brand-ink underline">Módulos</Link>.
         </p>
         <Link to="/admin/nuevo-modulo" className="mt-6">
           <Button size="lg" icon={<Upload className="size-5" />} className="h-13 shadow-lg shadow-brand/30">
@@ -165,7 +166,7 @@ function ModuleOverview({ module, data }: { module: ActiveModule; data: Attendan
         <div aria-hidden className="absolute -bottom-20 left-1/3 size-48 rounded-full bg-deco-teal/25 blur-2xl" />
         <div className="relative grid gap-6 p-6 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
           <div className="min-w-0">
-            <p className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Módulo activo</p>
+            <p className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Tu módulo activo</p>
             <h2 className="mt-2 truncate text-2xl font-extrabold sm:text-3xl">{module.name}</h2>
             <p className="mt-1 text-white/80">
               {module.firstDate && module.lastDate

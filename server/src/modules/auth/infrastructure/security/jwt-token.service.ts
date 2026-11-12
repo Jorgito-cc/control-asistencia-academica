@@ -32,6 +32,9 @@ export class JwtTokenService extends TokenService {
   async verify(token: string): Promise<AuthUser> {
     try {
       const payload = await this.jwt.verifyAsync<JwtPayload>(token);
+      if (payload.role !== 'ADMIN' && payload.role !== 'TEACHER' && payload.role !== 'STUDENT') {
+        throw new UnauthorizedError('Sesión no válida');
+      }
       return {
         id: payload.sub,
         role: payload.role,

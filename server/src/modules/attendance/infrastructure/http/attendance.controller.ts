@@ -83,12 +83,12 @@ export class AttendanceController {
   }
 
   @Get('export')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'TEACHER')
   async export(
-    @CurrentUser() admin: AuthUser,
+    @CurrentUser() user: AuthUser,
     @Query('moduleId', new ParseIntPipe({ optional: true })) moduleId?: number,
   ) {
-    const { file, fileName } = await this.exportAttendance.execute(admin, moduleId);
+    const { file, fileName } = await this.exportAttendance.execute(user, moduleId);
     return new StreamableFile(file, {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       disposition: `attachment; filename="${fileName}"`,

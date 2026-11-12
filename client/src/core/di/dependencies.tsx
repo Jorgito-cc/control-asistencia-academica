@@ -8,12 +8,14 @@ import type { NotificationRepository } from '../../features/notifications/domain
 import type { JustificationRepository } from '../../features/justifications/domain/justification.repository'
 import type { ProfileRepository } from '../../features/profile/domain/profile.repository'
 import type { StudentRepository } from '../../features/students/domain/student.repository'
+import type { TeacherRepository } from '../../features/teachers/domain/teacher.repository'
 
 /** Puertos que la capa de aplicación necesita; las implementaciones se inyectan en app/. */
 export interface Dependencies {
   auth: AuthRepository
   attendance: AttendanceRepository
   students: StudentRepository
+  teachers: TeacherRepository
   activity: ActivityRepository
   modules: AcademicModuleRepository
   profile: ProfileRepository

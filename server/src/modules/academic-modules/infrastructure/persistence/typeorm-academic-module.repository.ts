@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, EntityManager, IsNull, Repository } from 'typeorm';
+import { DEFAULT_ATTENDANCE_RULES } from '../../../../shared/domain/attendance-rules';
 import type { AttendanceRules } from '../../../../shared/domain/attendance-rules';
 import type { ExtraField } from '../../../../shared/domain/extra-fields';
 import { BusinessRuleError, ConflictError, NotFoundError } from '../../../../shared/domain/errors';
@@ -26,8 +27,8 @@ export class TypeormAcademicModuleRepository extends AcademicModuleRepository {
     super();
   }
 
-  async findActive(): Promise<AcademicModule | null> {
-    const row = await this.repo.findOneBy({ isActive: true });
+  async findActive(teacherId: number | null = null): Promise<AcademicModule | null> {
+    const row = await this.repo.findOneBy({ isActive: true, teacherId: teacherId ?? IsNull() });
     return row ? toDomain(row) : null;
   }
 
@@ -37,11 +38,11 @@ export class TypeormAcademicModuleRepository extends AcademicModuleRepository {
   }
 
   async findScheduled(): Promise<AcademicModule | null> {
-    const row = await this.repo.findOneBy({ status: 'SCHEDULED' });
+    const row = await this.repo.findOneBy({ status: 'SCHEDULED', teacherId: IsNull() });
     return row ? toDomain(row) : null;
   }
 
-  async list(today: string, timeZone: string): Promise<ModuleListItem[]> {
+  async list(today: string, timeZone: string, teacherId?: number): Promise<ModuleListItem[]> {
     // Clases "realizadas": anteriores a hoy, o hasta el día de cierre si el módulo ya terminó.
     const rows: ListRow[] = await this.dataSource.query(
       `
@@ -66,10 +67,12 @@ export class TypeormAcademicModuleRepository extends AcademicModuleRepository {
       FROM modules m
       JOIN ref ON ref.id = m.id
       LEFT JOIN admins a ON a.id = m.created_by
+      WHERE ($3::int IS NULL OR m.teacher_id = $3)
       `,
-      [today, timeZone],
+      [today, timeZone, teacherId ?? null],
     );
-    const modules = new Map((await this.repo.find()).map((row) => [row.id, toDomain(row)]));
+    const moduleRows = await this.repo.find(teacherId === undefined ? {} : { where: { teacherId } });
+    const modules = new Map(moduleRows.map((row) => [row.id, toDomain(row)]));
     return rows
       .map((row) => {
         const module = modules.get(row.id)!;
@@ -121,18 +124,17 @@ export class TypeormAcademicModuleRepository extends AcademicModuleRepository {
     };
   }
 
-  async activateNew(command: ActivateModuleCommand): Promise<AcademicModule> {
+  async activateNew(command: ActivateModuleCommand) {
     try {
       return await this.dataSource.transaction(async (manager) => {
         const scheduled = command.scheduledFor !== null;
-        if (!scheduled) {
-          // RN-08: el módulo anterior solo se desactiva; sus datos se conservan.
-          await manager.update(
-            AcademicModuleOrmEntity,
-            { isActive: true },
-            { isActive: false, status: 'CLOSED', closedAt: command.now },
-          );
-        }
+        const previousRow = scheduled
+          ? await manager.findOneBy(AcademicModuleOrmEntity, {
+              isActive: true,
+              teacherId: command.teacherId ?? IsNull(),
+            })
+          : await this.closeActive(manager, command.teacherId, command.now);
+        const previous = previousRow ? toDomain(previousRow) : null;
 
         const module = await manager.save(
           manager.create(AcademicModuleOrmEntity, {
@@ -143,8 +145,9 @@ export class TypeormAcademicModuleRepository extends AcademicModuleRepository {
             scheduledFor: command.scheduledFor,
             closedAt: null,
             createdBy: command.createdBy,
+            teacherId: command.teacherId,
             extraFields: command.extraFields,
-            ...toRuleColumns(command.rules),
+            ...toRuleColumns(previous?.rules ?? DEFAULT_ATTENDANCE_RULES),
           }),
         );
 
@@ -167,7 +170,7 @@ export class TypeormAcademicModuleRepository extends AcademicModuleRepository {
           })),
         );
 
-        return toDomain(module);
+        return { module: toDomain(module), previous };
       });
     } catch (error) {
       if (isUniqueViolation(error)) {
@@ -184,19 +187,12 @@ export class TypeormAcademicModuleRepository extends AcademicModuleRepository {
   async activateScheduled(moduleId: number, now: Date) {
     return this.dataSource.transaction(async (manager) => {
       const row = await manager.findOne(AcademicModuleOrmEntity, {
-        where: { id: moduleId },
+        where: { id: moduleId, teacherId: IsNull() },
         lock: { mode: 'pessimistic_write' },
       });
       if (!row || row.status !== 'SCHEDULED') return null;
 
-      const previousRow = await manager.findOneBy(AcademicModuleOrmEntity, { isActive: true });
-      if (previousRow) {
-        await manager.update(
-          AcademicModuleOrmEntity,
-          { id: previousRow.id },
-          { isActive: false, status: 'CLOSED', closedAt: now },
-        );
-      }
+      const previous = await this.closeActive(manager, null, now);
       await manager.update(
         AcademicModuleOrmEntity,
         { id: moduleId },
@@ -205,24 +201,41 @@ export class TypeormAcademicModuleRepository extends AcademicModuleRepository {
       const module = await manager.findOneByOrFail(AcademicModuleOrmEntity, { id: moduleId });
       return {
         module: toDomain(module),
-        previous: previousRow ? { ...toDomain(previousRow), isActive: false, status: 'CLOSED' as const, closedAt: now } : null,
+        previous: previous ? toDomain(previous) : null,
       };
     });
   }
 
   async reschedule(moduleId: number, scheduledFor: Date): Promise<AcademicModule> {
-    const result = await this.repo.update({ id: moduleId, status: 'SCHEDULED' }, { scheduledFor });
+    const result = await this.repo.update(
+      { id: moduleId, status: 'SCHEDULED', teacherId: IsNull() },
+      { scheduledFor },
+    );
     if (!result.affected) throw new BusinessRuleError('El módulo ya no está programado');
     return toDomain(await this.repo.findOneByOrFail({ id: moduleId }));
   }
 
   async cancelScheduled(moduleId: number, now: Date): Promise<AcademicModule> {
     const result = await this.repo.update(
-      { id: moduleId, status: 'SCHEDULED' },
+      { id: moduleId, status: 'SCHEDULED', teacherId: IsNull() },
       { status: 'CANCELLED', closedAt: now },
     );
     if (!result.affected) throw new BusinessRuleError('El módulo ya no está programado');
     return toDomain(await this.repo.findOneByOrFail({ id: moduleId }));
+  }
+
+  private async closeActive(manager: EntityManager, teacherId: number | null, now: Date) {
+    // RN-08: se conserva el módulo anterior con todo su historial.
+    const result = await manager
+      .createQueryBuilder()
+      .update(AcademicModuleOrmEntity)
+      .set({ isActive: false, status: 'CLOSED', closedAt: now })
+      .where({ isActive: true, teacherId: teacherId ?? IsNull() })
+      .returning('id')
+      .execute();
+    const [closed] = result.raw as { id: number }[];
+    if (!closed) return null;
+    return manager.findOneByOrFail(AcademicModuleOrmEntity, { id: closed.id });
   }
 }
 
@@ -236,6 +249,7 @@ function toDomain(row: AcademicModuleOrmEntity): AcademicModule {
     closedAt: row.closedAt,
     scheduledFor: row.scheduledFor,
     createdBy: row.createdBy,
+    teacherId: row.teacherId,
     extraFields: row.extraFields ?? [],
     rules: {
       enabled: row.lateRulesEnabled,

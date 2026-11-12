@@ -6,6 +6,7 @@ import { Button } from '../../../shared/ui/Button'
 import { Card, CardHeader } from '../../../shared/ui/Card'
 import { EmptyState } from '../../../shared/ui/EmptyState'
 import { PageLoader } from '../../../shared/ui/Spinner'
+import { useModule } from '../../academic-modules/application/academic-modules.queries'
 import { useJustifications } from '../../justifications/application/justifications.queries'
 import { JustificationNote } from '../../justifications/presentation/JustificationNote'
 import { useStudentAttendance } from '../application/attendance.queries'
@@ -22,12 +23,14 @@ export function StudentAttendancePage() {
   // Dentro del historial (/admin/modulos/:moduleId/...) se ve otro módulo, en solo lectura.
   const moduleId = params.moduleId ? Number(params.moduleId) : undefined
   const { data, isLoading, error } = useStudentAttendance(studentId, moduleId)
-  const readOnly = !!data && data.module.status !== 'ACTIVE'
+  const linkedModule = useModule(moduleId ?? 0)
+  const teacherModule = linkedModule.data?.teacherId != null
+  const readOnly = teacherModule || (!!data && data.module.status !== 'ACTIVE') || (moduleId !== undefined && !linkedModule.data)
   const justifications = useJustifications({ studentId, moduleId }, Number.isInteger(studentId))
   const backTo = moduleId ? `/admin/modulos/${moduleId}?tab=estudiantes` : '/admin/asistencias'
   const [editing, setEditing] = useState<EditTarget | null>(null)
 
-  if (isLoading) return <PageLoader />
+  if (isLoading || linkedModule.isLoading) return <PageLoader />
   if (error || !data) {
     return (
       <Card>
@@ -83,14 +86,14 @@ export function StudentAttendancePage() {
         </div>
       </div>
 
-      {readOnly && <ReadOnlyBanner moduleName={data.module.name} />}
+      {readOnly && linkedModule.data && <ReadOnlyBanner moduleName={data.module.name} teacherModule={teacherModule} />}
       <RiskBanner data={data} audience="admin" />
       <AttendanceStats data={data} />
 
       <Card>
         <CardHeader
           title="Historial de asistencia"
-          description={readOnly ? 'Módulo finalizado: solo lectura.' : 'Haz clic en un estado para modificarlo. El cambio queda auditado.'}
+          description={readOnly ? 'Consulta los registros de asistencia.' : 'Haz clic en un estado para modificarlo. El cambio queda auditado.'}
         />
         <AttendanceHistoryTable
           records={data.records}

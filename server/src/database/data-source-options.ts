@@ -30,6 +30,8 @@ import { ClassChangesAndCode1761100000000 } from './migrations/1761100000000-cla
 import { Notifications1761200000000 } from './migrations/1761200000000-notifications';
 import { ClassHoursOnly1761300000000 } from './migrations/1761300000000-class-hours-only';
 import { AdminInvitation1794441600000 } from './migrations/1794441600000-admin-invitation';
+import { StaffRoles1794441700000 } from './migrations/1794441700000-staff-roles';
+import { TeacherModules1794441800000 } from './migrations/1794441800000-teacher-modules';
 
 export const ORM_ENTITIES = [
   AdminOrmEntity,
@@ -71,6 +73,8 @@ export function buildDataSourceOptions(
       Notifications1761200000000,
       ClassHoursOnly1761300000000,
       AdminInvitation1794441600000,
+      StaffRoles1794441700000,
+      TeacherModules1794441800000,
     ],
     synchronize: false,
   };

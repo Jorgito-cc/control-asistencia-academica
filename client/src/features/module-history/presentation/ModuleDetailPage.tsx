@@ -75,7 +75,7 @@ export function ModuleDetailPage() {
     )
   }
 
-  const readOnly = module.status !== 'ACTIVE'
+  const readOnly = module.status !== 'ACTIVE' || module.teacherId != null
 
   return (
     <div className="space-y-6">
@@ -95,7 +95,7 @@ export function ModuleDetailPage() {
               {module.closedAt && ` · ${module.status === 'CANCELLED' ? 'cancelado' : 'cerrado'} ${formatDateTime(module.closedAt)}`}
             </p>
           </div>
-          {module.status === 'SCHEDULED' && <ScheduledModuleActions module={module} />}
+          {module.status === 'SCHEDULED' && module.teacherId == null && <ScheduledModuleActions module={module} />}
         </div>
       </div>
 
@@ -131,6 +131,7 @@ export function ModuleDetailPage() {
 
 function StatusBanner({ module }: { module: ActiveModule }) {
   if (module.status === 'CLOSED' || module.status === 'CANCELLED') return <ReadOnlyBanner moduleName={module.name} />
+  if (module.teacherId != null) return <ReadOnlyBanner moduleName={module.name} teacherModule />
   if (module.status === 'SCHEDULED') {
     return (
       <Banner tone="bg-info-soft text-info-ink" icon={<AlarmClock className="size-4" />}>

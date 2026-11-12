@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import type { Admin } from '../../domain/admin';
+import type { Admin, TeacherAccount } from '../../domain/admin';
 import type { AdminPhoto, AdminProfile, AdminProfileChanges } from '../../domain/admin-profile';
 import { AdminRepository } from '../../domain/admin.repository';
 import { AdminOrmEntity } from './admin.orm-entity';
@@ -32,6 +32,15 @@ export class TypeormAdminRepository extends AdminRepository {
 
   create(data: Omit<Admin, 'id'>): Promise<Admin> {
     return this.repo.save(this.repo.create(data));
+  }
+
+  async listTeachers(): Promise<TeacherAccount[]> {
+    const rows = await this.repo.find({
+      select: { id: true, email: true, fullName: true },
+      where: { role: 'TEACHER' },
+      order: { fullName: 'ASC', id: 'ASC' },
+    });
+    return rows.map(({ id, email, fullName }) => ({ id, email, fullName }));
   }
 
   async findProfile(id: number): Promise<AdminProfile | null> {

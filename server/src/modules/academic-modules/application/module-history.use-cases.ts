@@ -16,13 +16,15 @@ export class ModuleHistoryService {
     private readonly clock: Clock,
   ) {}
 
-  list() {
-    return this.repository.list(this.clock.today(), this.clock.timeZone);
+  list(teacherId?: number) {
+    return this.repository.list(this.clock.today(), this.clock.timeZone, teacherId);
   }
 
-  async get(moduleId: number) {
+  async get(moduleId: number, teacherId?: number) {
     const module = await this.repository.findById(moduleId);
-    if (!module) throw new NotFoundError('El módulo no existe');
+    if (!module || (teacherId !== undefined && module.teacherId !== teacherId)) {
+      throw new NotFoundError('El módulo no existe');
+    }
     return this.repository.summarize(module);
   }
 

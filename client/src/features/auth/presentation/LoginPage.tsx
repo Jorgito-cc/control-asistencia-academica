@@ -12,24 +12,29 @@ import {
   UserRound,
 } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { Navigate, useNavigate, useSearchParams } from 'react-router'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
 import { getErrorMessage } from '../../../core/http/api-error'
 import { cn } from '../../../shared/lib/cn'
 import { Spinner, PageLoader } from '../../../shared/ui/Spinner'
 import { ThemeToggle } from '../../../shared/ui/ThemeToggle'
 import { Field, Input } from '../../../shared/ui/Field'
 import { useAuth } from '../application/auth-context'
-import { homePathFor, type Role } from '../domain/auth-user'
+import { homePathFor } from '../domain/auth-user'
 
 const inputClass = 'h-14! rounded-2xl! pl-11! text-base! sm:text-sm! 2xl:h-16! 2xl:text-base!'
 
 export function LoginPage() {
-  const { status, user, expiredReason } = useAuth()
+  const { status, user, expiredReason, logout } = useAuth()
   const [params] = useSearchParams()
-  const [tab, setTab] = useState<Role>(() => params.get('acceso') === 'administrador' ? 'ADMIN' : 'STUDENT')
+  const moduleParam = params.get('modulo')
+  const moduleNumber = Number(moduleParam)
+  const moduleId = moduleParam && /^[1-9]\d*$/.test(moduleParam) && Number.isSafeInteger(moduleNumber) ? moduleNumber : undefined
+  const [tab, setTab] = useState<'ADMIN' | 'STUDENT'>(() => params.get('acceso') === 'administrador' ? 'ADMIN' : 'STUDENT')
 
   if (status === 'loading') return <PageLoader />
-  if (user) return <Navigate to={homePathFor(user.role)} replace />
+  if (user && (moduleParam === null || (user.role === 'STUDENT' && user.moduleId === moduleId))) {
+    return <Navigate to={homePathFor(user.role)} replace />
+  }
 
   return (
     <div className="grid min-h-dvh lg:grid-cols-[54fr_46fr]">
@@ -55,7 +60,9 @@ export function LoginPage() {
           <div className="w-full max-w-[520px] rounded-[28px] bg-surface p-6 shadow-[0_24px_70px_-24px_rgba(80,70,229,0.28)] ring-1 ring-line/70 sm:p-12 2xl:max-w-[620px] 2xl:rounded-[32px] 2xl:p-14">
             <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl 2xl:text-5xl">¡Bienvenido!</h1>
             <span aria-hidden className="mt-3 block h-1 w-11 rounded-full bg-brand" />
-            <p className="mt-5 text-muted 2xl:text-lg">Ingresa para registrar o consultar asistencias.</p>
+            <p className="mt-5 text-muted 2xl:text-lg">
+              {moduleId ? 'Acceso de estudiantes al módulo compartido por tu docente.' : 'Ingresa para registrar o consultar asistencias.'}
+            </p>
 
             {expiredReason && (
               <p className="mt-5 rounded-xl bg-alert-soft px-4 py-3 text-sm font-medium text-alert-ink">
@@ -63,7 +70,7 @@ export function LoginPage() {
               </p>
             )}
 
-            <div role="tablist" className="mt-8 grid grid-cols-2 gap-1 rounded-2xl bg-canvas p-1.5 ring-1 ring-line/60">
+            {moduleParam === null && <div role="tablist" className="mt-8 grid grid-cols-2 gap-1 rounded-2xl bg-canvas p-1.5 ring-1 ring-line/60">
               <TabButton
                 active={tab === 'STUDENT'}
                 onClick={() => setTab('STUDENT')}
@@ -76,11 +83,26 @@ export function LoginPage() {
                 onClick={() => setTab('ADMIN')}
                 icon={<ShieldCheck className="size-4" />}
               >
-                Administrador
+                Administrador / Docente
               </TabButton>
-            </div>
+            </div>}
 
-            <div className="mt-7 2xl:mt-8">{tab === 'STUDENT' ? <StudentForm /> : <AdminForm />}</div>
+            <div className="mt-7 2xl:mt-8">
+              {moduleParam !== null && !moduleId ? (
+                <div className="space-y-3 text-sm">
+                  <p role="alert" className="font-medium text-alert-ink">El enlace del módulo no es válido.</p>
+                  <Link to="/login" className="font-semibold text-brand-ink underline">Ir al acceso general</Link>
+                </div>
+              ) : user ? (
+                <div className="space-y-3 text-sm">
+                  <p className="text-muted">Tienes una sesión abierta como {user.name}. Ciérrala para entrar a este módulo.</p>
+                  <div className="flex flex-wrap gap-3">
+                    <button type="button" className="font-semibold text-brand-ink underline" onClick={() => void logout()}>Cerrar sesión</button>
+                    <Link to={homePathFor(user.role)} className="font-semibold text-muted underline">Volver a mi sesión</Link>
+                  </div>
+                </div>
+              ) : moduleId || tab === 'STUDENT' ? <StudentForm moduleId={moduleId} /> : <AdminForm />}
+            </div>
 
           </div>
         </div>
@@ -93,7 +115,7 @@ export function LoginPage() {
   )
 }
 
-function StudentForm() {
+function StudentForm({ moduleId }: { moduleId?: number }) {
   const { loginStudent } = useAuth()
   const navigate = useNavigate()
   const [identifier, setIdentifier] = useState('')
@@ -105,7 +127,7 @@ function StudentForm() {
     setError(null)
     setLoading(true)
     try {
-      const current = await loginStudent(identifier.trim())
+      const current = await loginStudent(identifier.trim(), moduleId)
       navigate(homePathFor(current.role), { replace: true })
     } catch (err) {
       setError(getErrorMessage(err))
@@ -165,7 +187,7 @@ function AdminForm() {
           type="email"
           required
           autoComplete="email"
-          placeholder="admin@gmail.com"
+          placeholder="nombre@institucion.edu"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           icon={<Mail className="ml-1 size-[18px]" />}
@@ -186,7 +208,7 @@ function AdminForm() {
         />
       </Field>
       <FormError message={error} />
-      <SubmitButton loading={loading}>Ingresar como administrador</SubmitButton>
+      <SubmitButton loading={loading}>Ingresar</SubmitButton>
     </form>
   )
 }
@@ -231,7 +253,7 @@ function TabButton({
       aria-selected={active}
       onClick={onClick}
       className={cn(
-        'flex h-12 items-center justify-center gap-2 rounded-xl text-sm font-semibold transition 2xl:h-14 2xl:text-base',
+        'flex min-h-12 items-center justify-center gap-1.5 rounded-xl px-1 text-center text-xs font-semibold transition sm:gap-2 sm:text-sm 2xl:min-h-14 2xl:text-base',
         active ? 'bg-surface text-brand shadow-sm ring-1 ring-line/60' : 'text-muted hover:text-ink',
       )}
     >

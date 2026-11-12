@@ -8,12 +8,14 @@ import { HttpNotificationRepository } from '../features/notifications/infrastruc
 import { HttpJustificationRepository } from '../features/justifications/infrastructure/http-justification.repository'
 import { HttpProfileRepository } from '../features/profile/infrastructure/http-profile.repository'
 import { HttpStudentRepository } from '../features/students/infrastructure/http-student.repository'
+import { HttpTeacherRepository } from '../features/teachers/infrastructure/http-teacher.repository'
 
 /** Único lugar donde se eligen las implementaciones concretas (adaptadores HTTP). */
 export const dependencies: Dependencies = {
   auth: new HttpAuthRepository(),
   attendance: new HttpAttendanceRepository(),
   students: new HttpStudentRepository(),
+  teachers: new HttpTeacherRepository(),
   activity: new HttpActivityRepository(),
   modules: new HttpAcademicModuleRepository(),
   profile: new HttpProfileRepository(),

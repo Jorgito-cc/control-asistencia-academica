@@ -31,6 +31,9 @@ export class AcademicModuleOrmEntity {
   @Column({ name: 'created_by', type: 'int', nullable: true })
   createdBy: number | null;
 
+  @Column({ name: 'teacher_id', type: 'int', nullable: true })
+  teacherId: number | null;
+
   @Column({ name: 'late_rules_enabled', type: 'boolean', default: false })
   lateRulesEnabled: boolean;
 

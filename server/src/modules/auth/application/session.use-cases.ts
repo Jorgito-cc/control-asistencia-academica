@@ -16,13 +16,13 @@ export class GetSessionUseCase {
   ) {}
 
   async execute(user: AuthUser): Promise<AuthUser> {
-    if (user.role === 'ADMIN') {
+    if (user.role !== 'STUDENT') {
       const admin = await this.admins.findById(user.id);
-      if (!admin) throw new UnauthorizedError('Sesión no válida');
+      if (!admin || admin.role !== user.role) throw new UnauthorizedError('Sesión no válida');
       // El nombre puede haber cambiado desde el perfil después de emitir el token.
       return { ...user, name: admin.fullName };
     }
-    const module = await this.activeModule.getActive();
+    const module = user.moduleId === null ? null : await this.activeModule.getActiveById(user.moduleId);
     const student = await this.students.findById(user.id);
     if (!module || !student || !student.active || student.moduleId !== module.id) {
       throw new UnauthorizedError('Tu sesión ya no corresponde al módulo activo. Vuelve a ingresar.');
@@ -40,11 +40,13 @@ export class LogoutUseCase {
   ) {}
 
   async execute(user: AuthUser): Promise<void> {
-    const module = await this.activeModule.getActive();
+    const moduleId = user.role === 'STUDENT'
+      ? user.moduleId
+      : (await this.activeModule.getActive(user.role === 'TEACHER' ? user.id : null))?.id ?? null;
     await this.activity.record({
       actor: user,
       action: 'LOGOUT',
-      moduleId: module?.id ?? null,
+      moduleId,
       studentId: user.role === 'STUDENT' ? user.id : null,
       description: `${user.name} cerró sesión`,
     });

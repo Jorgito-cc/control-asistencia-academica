@@ -1,5 +1,5 @@
 import { X } from 'lucide-react'
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { cn } from '../lib/cn'
 
 export function Modal({
@@ -18,6 +18,7 @@ export function Modal({
   size?: 'md' | 'lg'
 }) {
   const ref = useRef<HTMLDialogElement>(null)
+  const titleId = useId()
 
   useEffect(() => {
     const dialog = ref.current
@@ -29,6 +30,7 @@ export function Modal({
   return (
     <dialog
       ref={ref}
+      aria-labelledby={titleId}
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
       className={cn(
@@ -39,7 +41,7 @@ export function Modal({
       {open && (
         <div>
           <div className="flex items-center justify-between border-b border-line px-5 py-4">
-            <h2 className="text-lg font-bold">{title}</h2>
+            <h2 id={titleId} className="text-lg font-bold">{title}</h2>
             <button
               type="button"
               onClick={onClose}

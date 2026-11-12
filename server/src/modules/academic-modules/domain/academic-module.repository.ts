@@ -6,9 +6,9 @@ import type { SessionImport, StudentImport } from './import/import-rows';
 export interface ActivateModuleCommand {
   name: string;
   createdBy: number;
+  teacherId: number | null;
   students: StudentImport[];
   sessions: SessionImport[];
-  rules: AttendanceRules;
   extraFields: ExtraField[];
   now: Date;
   /** Si se indica, el módulo queda programado para esa fecha en vez de activarse ahora. */
@@ -16,17 +16,19 @@ export interface ActivateModuleCommand {
 }
 
 export abstract class AcademicModuleRepository {
-  abstract findActive(): Promise<AcademicModule | null>;
+  abstract findActive(teacherId?: number | null): Promise<AcademicModule | null>;
   abstract findById(id: number): Promise<AcademicModule | null>;
   abstract findScheduled(): Promise<AcademicModule | null>;
   abstract summarize(module: AcademicModule): Promise<AcademicModuleSummary>;
-  /** Todos los módulos con sus totales, del más reciente al más antiguo. */
-  abstract list(today: string, timeZone: string): Promise<ModuleListItem[]>;
+  /** Historial de todos los módulos o del docente indicado. */
+  abstract list(today: string, timeZone: string, teacherId?: number): Promise<ModuleListItem[]>;
   /**
    * RF-13 / RN-01 / RN-08: crea el módulo con sus estudiantes y fechas en una única transacción.
-   * Sin fecha programada cierra el módulo activo (sin borrar nada) y activa el nuevo.
+   * Sin fecha programada cierra el activo del mismo docente (o de administración) y activa el nuevo.
    */
-  abstract activateNew(command: ActivateModuleCommand): Promise<AcademicModule>;
+  abstract activateNew(
+    command: ActivateModuleCommand,
+  ): Promise<{ module: AcademicModule; previous: AcademicModule | null }>;
   /** Activa un módulo programado y cierra el activo. Devuelve null si ya no estaba programado. */
   abstract activateScheduled(
     moduleId: number,

@@ -92,9 +92,6 @@ export class AdminInvitationsService {
         throw new ValidationError('La invitación venció. Solicita un enlace nuevo');
       }
       ensureStrongPassword(password);
-      if (Buffer.byteLength(password, 'utf8') > 72) {
-        throw new ValidationError('La contraseña puede ocupar hasta 72 bytes en UTF-8');
-      }
       const admins = manager.getRepository(AdminOrmEntity);
       if (await admins.exists()) {
         throw new ConflictError('La instalación ya tiene un administrador');
@@ -103,6 +100,7 @@ export class AdminInvitationsService {
         email: invite.email,
         fullName: invite.fullName,
         passwordHash: await this.hasher.hash(password),
+        role: 'ADMIN',
       }));
       invite.usedAt = new Date();
       invite.adminId = admin.id;

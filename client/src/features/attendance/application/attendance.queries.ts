@@ -47,9 +47,9 @@ export function useAttendanceOverview(filters: OverviewFilters = {}, options: { 
   })
 }
 
-export function useClassSessions(moduleId?: number) {
+export function useClassSessions(moduleId?: number, enabled = true) {
   const { attendance } = useDependencies()
-  return useQuery({ queryKey: attendanceKeys.sessions(moduleId), queryFn: () => attendance.getSessions(moduleId) })
+  return useQuery({ queryKey: attendanceKeys.sessions(moduleId), queryFn: () => attendance.getSessions(moduleId), enabled })
 }
 
 /** RF-07 */

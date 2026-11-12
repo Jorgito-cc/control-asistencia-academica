@@ -10,6 +10,7 @@ import {
   Library,
   LogOut,
   Menu,
+  Presentation,
   Search,
   SquarePlus,
   UserRound,
@@ -46,6 +47,7 @@ const NAV = [
   { to: '/admin/calendario', label: 'Calendario', icon: CalendarDays },
   { to: '/admin/reportes', label: 'Reportes', icon: BarChart3 },
   { to: '/admin/estudiantes', label: 'Estudiantes', icon: Users },
+  { to: '/admin/docentes', label: 'Docentes', icon: Presentation },
   { to: '/admin/justificaciones', label: 'Justificaciones', icon: FileClock },
   { to: '/admin/actividades', label: 'Actividades', icon: History },
   { to: '/admin/modulos', label: 'Módulos', icon: Library },
@@ -234,10 +236,10 @@ function ActiveModuleCard({ collapsed }: { collapsed: boolean }) {
   const compact = collapsed ? 'lg:hidden' : ''
   return (
     <div className={cn('relative px-6', collapsed && 'lg:px-3')}>
-      <p className={cn('mb-2 text-xs font-bold tracking-wide text-teal uppercase', compact)}>Módulo activo</p>
+      <p className={cn('mb-2 text-xs font-bold tracking-wide text-teal uppercase', compact)}>Tu módulo activo</p>
       <Link
         to={data ? '/admin/calendario' : '/admin/nuevo-modulo'}
-        title={collapsed ? `Módulo activo: ${name}` : undefined}
+        title={collapsed ? `Tu módulo activo: ${name}` : undefined}
         className={cn(
           'flex items-center gap-3 rounded-2xl bg-teal-soft px-4 py-3 text-teal-ink transition hover:brightness-95',
           collapsed && 'lg:justify-center lg:px-0',

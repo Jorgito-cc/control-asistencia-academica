@@ -21,12 +21,14 @@ import {
 } from '../application/academic-modules.queries'
 import type { ImportDraft, ImportErrors } from '../domain/academic-module'
 import { useClassSessions } from '../../attendance/application/attendance.queries'
+import { useAuth } from '../../auth/application/auth-context'
 import { scheduleConflicts } from '../domain/schedule-conflicts'
 import { ImportDraftEditor, type ExtraSelection } from './ImportDraftEditor'
 import { ScheduleConflictNotice } from './ScheduleConflictNotice'
 
 /** RF-11, RF-12, RF-13 y RF-16: importar, revisar y activar un nuevo módulo. */
 export function NewModulePage() {
+  const isTeacher = useAuth().user?.role === 'TEACHER'
   const [name, setName] = useState('')
   const [studentsFile, setStudentsFile] = useState<File | null>(null)
   const [sessionsFile, setSessionsFile] = useState<File | null>(null)
@@ -42,7 +44,7 @@ export function NewModulePage() {
 
   const active = useActiveModule()
   const existingScheduled = useModules().data?.find((m) => m.status === 'SCHEDULED')
-  const scheduling = mode === 'schedule'
+  const scheduling = !isTeacher && mode === 'schedule'
   const scheduledIso = scheduling && scheduledAt ? new Date(scheduledAt).toISOString() : undefined
   const [acceptOverlap, setAcceptOverlap] = useState(false)
   const previewImport = usePreviewImport()
@@ -117,8 +119,9 @@ export function NewModulePage() {
             toast.success(`Módulo "${module.name}" programado para el ${formatScheduled(module.scheduledFor!)}`)
             navigate('/admin/modulos')
           } else {
-            toast.success(`Módulo "${module.name}" activado con ${module.studentCount} estudiantes`)
-            navigate('/admin')
+            const students = module.studentCount === 1 ? 'estudiante' : 'estudiantes'
+            toast.success(`Módulo "${module.name}" activado con ${module.studentCount} ${students}`)
+            navigate(isTeacher ? '/docente' : '/admin')
           }
         },
         onError: (err) => {
@@ -135,7 +138,7 @@ export function NewModulePage() {
   }
 
   // Choques de fechas entre el módulo activo y el nuevo, en el momento en que se activaría.
-  const activeSessions = useClassSessions().data ?? []
+  const activeSessions = useClassSessions(undefined, !isTeacher).data ?? []
   const activation = scheduling ? scheduledAt : toLocalInput(new Date())
   const conflicts =
     active.data && activation
@@ -161,7 +164,9 @@ export function NewModulePage() {
     <>
       <PageHeader
         title="Nuevo módulo"
-        description="Carga los estudiantes y las fechas de clase. El módulo actual se archivará sin borrar sus datos."
+        description={isTeacher
+          ? 'Carga los estudiantes y las fechas de clase. Si tienes un módulo activo, se archivará al activar el nuevo.'
+          : 'Carga los estudiantes y las fechas de clase. El módulo actual se archivará sin borrar sus datos.'}
       />
 
       <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
@@ -196,7 +201,7 @@ export function NewModulePage() {
                 resetPreview()
               }}
             />
-            <fieldset>
+            {!isTeacher && <fieldset>
               <legend className="mb-1.5 text-sm font-semibold">¿Cuándo se activa?</legend>
               <div className="grid grid-cols-2 gap-1 rounded-xl bg-line/60 p-1">
                 <TabButton active={!scheduling} onClick={() => setMode('now')}>
@@ -206,7 +211,7 @@ export function NewModulePage() {
                   <CalendarClock className="size-4" /> Programar
                 </TabButton>
               </div>
-            </fieldset>
+            </fieldset>}
             {scheduling &&
               (existingScheduled ? (
                 <p className="rounded-xl bg-warning-soft px-4 py-3 text-sm text-warning-ink">
@@ -335,7 +340,7 @@ export function NewModulePage() {
               </div>
             )
           ) : (
-            <p className="rounded-xl bg-canvas p-4">Este será el primer módulo activo del sistema.</p>
+            <p className="rounded-xl bg-canvas p-4">{isTeacher ? 'Este será tu módulo activo.' : 'Este será el primer módulo activo del sistema.'}</p>
           )}
           {conflicts && hasOverlap && (
             <>

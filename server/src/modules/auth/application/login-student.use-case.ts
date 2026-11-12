@@ -16,9 +16,15 @@ export class LoginStudentUseCase {
     private readonly activity: ActivityRecorder,
   ) {}
 
-  async execute(identifier: string) {
-    const module = await this.activeModule.getActive();
+  async execute(identifier: string, moduleId?: number) {
+    const module =
+      moduleId === undefined
+        ? await this.activeModule.getActive()
+        : await this.activeModule.getActiveById(moduleId);
     if (!module) {
+      if (moduleId !== undefined) {
+        throw new UnauthorizedError('El módulo de este enlace no está activo. Consulta con tu docente.');
+      }
       throw new UnauthorizedError('Todavía no hay un módulo activo. Consulta con tu administrador.');
     }
 

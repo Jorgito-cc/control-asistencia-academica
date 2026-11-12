@@ -60,6 +60,7 @@ export class ScheduledActivationService implements OnApplicationBootstrap, OnMod
       },
       action: 'ACTIVATE_MODULE',
       moduleId: module.id,
+      previousModuleId: previous?.id,
       entity: 'module',
       entityId: module.id,
       description: admin

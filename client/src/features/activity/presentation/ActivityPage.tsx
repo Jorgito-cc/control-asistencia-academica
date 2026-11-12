@@ -9,6 +9,7 @@ import { Input, Select } from '../../../shared/ui/Field'
 import { PageHeader } from '../../../shared/ui/PageHeader'
 import { PageLoader } from '../../../shared/ui/Spinner'
 import { useStudents } from '../../students/application/students.queries'
+import type { Role } from '../../auth/domain/auth-user'
 import { useActivity } from '../application/activity.queries'
 import { actionLabel, type ActivityAction } from '../domain/activity'
 
@@ -39,6 +40,7 @@ const ACTION_TONES: Record<ActivityAction, ChipTone> = {
 }
 
 const PAGE_SIZE = 20
+const ACTOR_LABELS: Record<Role, string> = { ADMIN: 'Administrador', TEACHER: 'Docente', STUDENT: 'Estudiante' }
 
 /** RF-10: historial de acciones del módulo activo, filtrable por estudiante o fecha. */
 export function ActivityPage() {
@@ -133,7 +135,7 @@ export function ActivityView({ moduleId }: { moduleId?: number }) {
                       <td className="px-5 py-3 whitespace-nowrap text-muted tabular-nums">{formatDateTime(log.createdAt)}</td>
                       <td className="px-5 py-3">
                         <p className="font-semibold whitespace-nowrap">{log.actorName}</p>
-                        <p className="text-xs text-muted">{log.actorType === 'ADMIN' ? 'Administrador' : 'Estudiante'}</p>
+                        <p className="text-xs text-muted">{ACTOR_LABELS[log.actorType]}</p>
                       </td>
                       <td className="px-5 py-3">
                         <Chip tone={ACTION_TONES[log.action] ?? 'neutral'}>{actionLabel(log.action)}</Chip>

@@ -13,8 +13,11 @@ export class StudentContextService {
   ) {}
 
   async resolve(user: AuthUser) {
-    const module = await this.activeModule.getActive();
-    const student = await this.students.findById(user.id);
+    const module =
+      user.role === 'STUDENT' && user.moduleId !== null
+        ? await this.activeModule.getActiveById(user.moduleId)
+        : null;
+    const student = module ? await this.students.findById(user.id) : null;
     if (!module || !student || student.moduleId !== module.id) {
       throw new UnauthorizedError('Tu sesión ya no corresponde al módulo activo. Vuelve a ingresar.');
     }
