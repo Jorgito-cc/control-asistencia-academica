@@ -1,9 +1,9 @@
 import type { Role } from '../../../shared/domain/auth-user';
-import type { NewNotification, Notification } from './notification';
+import type { NewNotification, Notification, NotificationAudience } from './notification';
 
 export interface FeedQuery {
   moduleId: number;
-  audience: Role;
+  audience: NotificationAudience;
   /** Para estudiantes: incluye las dirigidas a todos y las propias. */
   studentId?: number;
   limit: number;

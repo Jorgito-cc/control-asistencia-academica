@@ -32,20 +32,20 @@ export class SessionsController {
   ) {}
 
   @Get()
-  @Roles('ADMIN')
-  list(@Query('moduleId', new ParseIntPipe({ optional: true })) moduleId?: number) {
-    return this.listSessions.execute(moduleId);
+  @Roles('TEACHER')
+  list(@CurrentUser() teacher: AuthUser, @Query('moduleId', new ParseIntPipe({ optional: true })) moduleId?: number) {
+    return this.listSessions.execute(teacher.id, moduleId);
   }
 
   /** Historial de cambios de clases (también lo ven los estudiantes de su módulo). */
   @Get('changes')
-  @Roles('ADMIN', 'STUDENT')
+  @Roles('TEACHER', 'STUDENT')
   changes(@CurrentUser() user: AuthUser, @Query('moduleId', new ParseIntPipe({ optional: true })) moduleId?: number) {
     return this.management.listChanges(user, moduleId);
   }
 
   @Get('changes/:id/files/:fileId')
-  @Roles('ADMIN', 'STUDENT')
+  @Roles('TEACHER', 'STUDENT')
   async changeFile(
     @CurrentUser() user: AuthUser,
     @Param('id', ParseIntPipe) id: number,
@@ -56,51 +56,51 @@ export class SessionsController {
   }
 
   @Post()
-  @Roles('ADMIN')
+  @Roles('TEACHER')
   @UseInterceptors(photos())
-  add(@CurrentUser() admin: AuthUser, @Body() body: SessionDataDto, @UploadedFiles() files: UploadedImage[] = []) {
+  add(@CurrentUser() teacher: AuthUser, @Body() body: SessionDataDto, @UploadedFiles() files: UploadedImage[] = []) {
     return this.management.add(
-      admin,
+      teacher,
       { classDate: body.date, startTime: body.startTime, endTime: body.endTime },
       { reason: body.reason, files },
     );
   }
 
   @Post(':id/cancel')
-  @Roles('ADMIN')
+  @Roles('TEACHER')
   @UseInterceptors(photos())
   cancel(
-    @CurrentUser() admin: AuthUser,
+    @CurrentUser() teacher: AuthUser,
     @Param('id', ParseIntPipe) id: number,
     @Body() body: SessionChangeDto,
     @UploadedFiles() files: UploadedImage[] = [],
   ) {
-    return this.management.cancel(admin, id, { reason: body.reason, files });
+    return this.management.cancel(teacher, id, { reason: body.reason, files });
   }
 
   @Post(':id/restore')
-  @Roles('ADMIN')
+  @Roles('TEACHER')
   @UseInterceptors(photos())
   restore(
-    @CurrentUser() admin: AuthUser,
+    @CurrentUser() teacher: AuthUser,
     @Param('id', ParseIntPipe) id: number,
     @Body() body: SessionChangeDto,
     @UploadedFiles() files: UploadedImage[] = [],
   ) {
-    return this.management.restore(admin, id, { reason: body.reason, files });
+    return this.management.restore(teacher, id, { reason: body.reason, files });
   }
 
   @Post(':id/reschedule')
-  @Roles('ADMIN')
+  @Roles('TEACHER')
   @UseInterceptors(photos())
   reschedule(
-    @CurrentUser() admin: AuthUser,
+    @CurrentUser() teacher: AuthUser,
     @Param('id', ParseIntPipe) id: number,
     @Body() body: SessionDataDto,
     @UploadedFiles() files: UploadedImage[] = [],
   ) {
     return this.management.reschedule(
-      admin,
+      teacher,
       id,
       { classDate: body.date, startTime: body.startTime, endTime: body.endTime },
       { reason: body.reason, files },
@@ -108,8 +108,8 @@ export class SessionsController {
   }
 
   @Patch(':id/code')
-  @Roles('ADMIN')
-  code(@CurrentUser() admin: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() body: ClassCodeDto) {
-    return this.management.setCode(admin, id, body.code ?? null);
+  @Roles('TEACHER')
+  code(@CurrentUser() teacher: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() body: ClassCodeDto) {
+    return this.management.setCode(teacher, id, body.code ?? null);
   }
 }

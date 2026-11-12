@@ -1,6 +1,6 @@
 import { Column, Entity, PrimaryColumn, PrimaryGeneratedColumn } from 'typeorm';
 import type { Role } from '../../../../shared/domain/auth-user';
-import type { NotificationType } from '../../domain/notification';
+import type { NotificationAudience, NotificationType } from '../../domain/notification';
 
 @Entity('notifications')
 export class NotificationOrmEntity {
@@ -11,7 +11,7 @@ export class NotificationOrmEntity {
   moduleId: number;
 
   @Column({ type: 'varchar', length: 10 })
-  audience: Role;
+  audience: NotificationAudience;
 
   @Column({ name: 'student_id', type: 'int', nullable: true })
   studentId: number | null;

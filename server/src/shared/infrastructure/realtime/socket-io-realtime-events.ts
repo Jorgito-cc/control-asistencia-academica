@@ -6,7 +6,7 @@ import { RealtimeEvent, RealtimeEvents } from '../../application/realtime.port';
 export const CHANGED_EVENT = 'changed';
 
 export const realtimeRooms = {
-  admins: 'admins',
+  teacher: (teacherId: number) => `teacher:${teacherId}`,
   module: (moduleId: number) => `module:${moduleId}`,
   student: (studentId: number) => `student:${studentId}`,
 };
@@ -24,8 +24,8 @@ export class SocketIoRealtimeEvents extends RealtimeEvents {
     this.server = server;
   }
 
-  toAdmins(event: RealtimeEvent) {
-    this.emit(realtimeRooms.admins, event);
+  toTeacher(teacherId: number, event: RealtimeEvent) {
+    this.emit(realtimeRooms.teacher(teacherId), event);
   }
 
   toModuleStudents(moduleId: number, event: RealtimeEvent) {

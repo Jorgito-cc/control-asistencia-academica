@@ -16,13 +16,13 @@ export class UpdateAttendanceRulesUseCase {
     private readonly notifier: Notifier,
   ) {}
 
-  async execute(admin: AuthUser, rules: AttendanceRules) {
+  async execute(teacher: AuthUser, rules: AttendanceRules) {
     ensureValidRules(rules);
-    const module = await this.activeModule.getActiveOrFail();
+    const module = await this.activeModule.getActiveOrFail(teacher.id);
     const updated = await this.repository.updateRules(module.id, rules);
 
     await this.activity.record({
-      actor: admin,
+      actor: teacher,
       action: 'UPDATE_RULES',
       moduleId: module.id,
       entity: 'module',

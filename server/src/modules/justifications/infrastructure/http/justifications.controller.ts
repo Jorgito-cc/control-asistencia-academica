@@ -17,11 +17,11 @@ import { JustificationsService } from '../../application/justifications.service'
 import type { UploadedImage } from '../../domain/justification';
 import { MAX_JUSTIFICATION_FILE_BYTES, MAX_JUSTIFICATION_FILES } from '../../domain/justification-policy';
 import {
-  AdminJustificationDto,
   ApproveJustificationDto,
   ListJustificationsQueryDto,
   RejectJustificationDto,
   SubmitJustificationDto,
+  TeacherJustificationDto,
 } from './justification.dto';
 
 // Se deja pasar un poco más del límite para responder con un mensaje claro desde el dominio.
@@ -50,20 +50,20 @@ export class JustificationsController {
   }
 
   @Get()
-  @Roles('ADMIN')
-  list(@Query() query: ListJustificationsQueryDto) {
-    return this.justifications.list(query);
+  @Roles('TEACHER')
+  list(@CurrentUser() teacher: AuthUser, @Query() query: ListJustificationsQueryDto) {
+    return this.justifications.list(teacher, query);
   }
 
   @Post()
-  @Roles('ADMIN')
+  @Roles('TEACHER')
   @UseInterceptors(images())
-  createByAdmin(
-    @CurrentUser() admin: AuthUser,
-    @Body() body: AdminJustificationDto,
+  createByTeacher(
+    @CurrentUser() teacher: AuthUser,
+    @Body() body: TeacherJustificationDto,
     @UploadedFiles() files: UploadedImage[] = [],
   ) {
-    return this.justifications.createByAdmin(admin, {
+    return this.justifications.createByTeacher(teacher, {
       studentId: body.studentId,
       sessionId: body.sessionId,
       status: body.status,
@@ -73,19 +73,19 @@ export class JustificationsController {
   }
 
   @Post(':id/approve')
-  @Roles('ADMIN')
-  approve(@CurrentUser() admin: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() body: ApproveJustificationDto) {
-    return this.justifications.approve(admin, id, body);
+  @Roles('TEACHER')
+  approve(@CurrentUser() teacher: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() body: ApproveJustificationDto) {
+    return this.justifications.approve(teacher, id, body);
   }
 
   @Post(':id/reject')
-  @Roles('ADMIN')
-  reject(@CurrentUser() admin: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() body: RejectJustificationDto) {
-    return this.justifications.reject(admin, id, body.comment);
+  @Roles('TEACHER')
+  reject(@CurrentUser() teacher: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() body: RejectJustificationDto) {
+    return this.justifications.reject(teacher, id, body.comment);
   }
 
   @Get(':id/files/:fileId')
-  @Roles('ADMIN', 'STUDENT')
+  @Roles('TEACHER', 'STUDENT')
   async file(
     @CurrentUser() user: AuthUser,
     @Param('id', ParseIntPipe) id: number,

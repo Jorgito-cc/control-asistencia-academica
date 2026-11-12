@@ -19,8 +19,8 @@ export class ListActivitiesUseCase {
     private readonly clock: Clock,
   ) {}
 
-  async execute(query: ListActivitiesQuery) {
-    const module = await this.activeModule.resolve(query.moduleId);
+  async execute(query: ListActivitiesQuery, teacherId: number) {
+    const module = await this.activeModule.resolve(query.moduleId, teacherId);
     const page = Math.max(1, query.page ?? 1);
     const pageSize = Math.min(100, Math.max(1, query.pageSize ?? 25));
     const { items, total } = await this.repository.search({

@@ -1,7 +1,5 @@
-import type { Role } from '../../../shared/domain/auth-user';
-
-/** ADMIN: la ve el docente. STUDENT: la ven todos los estudiantes del módulo, o uno si tiene `studentId`. */
-export type NotificationAudience = Role;
+/** ADMIN se conserva como audiencia almacenada para el docente a cargo del módulo. */
+export type NotificationAudience = 'ADMIN' | 'STUDENT';
 
 export type NotificationType =
   | 'SESSION_CANCELLED'

@@ -20,7 +20,7 @@ export class ActiveModuleService {
     const module = await this.getActive(teacherId);
     if (!module) {
       throw new NotFoundError(
-        'No hay un módulo activo. El administrador debe importar estudiantes y fechas.',
+        'No hay un módulo activo. Primero importa estudiantes y fechas.',
       );
     }
     return module;

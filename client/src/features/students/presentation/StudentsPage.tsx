@@ -129,7 +129,7 @@ export function StudentsView({ moduleId }: { moduleId?: number }) {
                     </td>
                     <td className="px-5 py-3 font-semibold whitespace-nowrap">
                       <Link
-                        to={moduleId ? `/admin/modulos/${moduleId}/estudiantes/${student.id}` : `/admin/estudiantes/${student.id}`}
+                        to={moduleId ? `/docente/modulos/${moduleId}/estudiantes/${student.id}` : `/docente/estudiantes/${student.id}`}
                         className="hover:text-brand hover:underline"
                       >
                         {student.fullName}

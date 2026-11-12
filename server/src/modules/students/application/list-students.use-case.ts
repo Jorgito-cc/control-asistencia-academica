@@ -10,9 +10,11 @@ export class ListStudentsUseCase {
     private readonly activeModule: ActiveModuleService,
   ) {}
 
-  async execute(search?: string, moduleId?: number, includeInactive = false) {
+  async execute(teacherId: number, search?: string, moduleId?: number, includeInactive = false) {
     const module =
-      moduleId !== undefined ? await this.activeModule.resolve(moduleId) : await this.activeModule.getActive();
+      moduleId !== undefined
+        ? await this.activeModule.resolve(moduleId, teacherId)
+        : await this.activeModule.getActive(teacherId);
     if (!module) return [];
     return this.students.findByModule(module.id, search?.trim() || undefined, includeInactive);
   }

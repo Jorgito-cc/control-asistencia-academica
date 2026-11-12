@@ -12,6 +12,7 @@ import { PageLoader } from '../../../shared/ui/Spinner'
 import { useModules } from '../../academic-modules/application/academic-modules.queries'
 import type { ModuleListItem } from '../../academic-modules/domain/academic-module'
 import { ModuleStatusChip } from './ModuleStatusChip'
+import { ModuleAccessActions } from './ModuleAccessActions'
 import { ScheduledModuleActions } from './ScheduledModuleActions'
 import { formatScheduled, relativeFromNow } from './schedule-format'
 
@@ -30,7 +31,7 @@ export function ModulesPage() {
         title="Módulos"
         description="El módulo activo, el programado y el historial de los anteriores con todos sus datos."
         actions={
-          <Link to="/admin/nuevo-modulo">
+          <Link to="/docente/nuevo-modulo">
             <Button icon={<SquarePlus className="size-4" />}>Nuevo módulo</Button>
           </Link>
         }
@@ -82,7 +83,7 @@ function ScheduledCard({ module }: { module: ModuleListItem }) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <ScheduledModuleActions module={module} />
-          <Link to={`/admin/modulos/${module.id}`}>
+          <Link to={`/docente/modulos/${module.id}`}>
             <Button variant="ghost" size="sm" icon={<ArrowRight className="size-4" />}>
               Ver
             </Button>
@@ -97,45 +98,49 @@ function ModuleCard({ module }: { module: ModuleListItem }) {
   const isActive = module.status === 'ACTIVE'
   const cancelled = module.status === 'CANCELLED'
   return (
-    <Link
-      to={`/admin/modulos/${module.id}`}
+    <Card
+      role="article"
+      aria-labelledby={`module-card-${module.id}`}
       className={cn(
-        'group flex flex-col rounded-2xl bg-surface p-5 shadow-sm ring-1 ring-line/70 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand/5',
+        'flex min-w-0 flex-col ring-1 ring-line/70 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand/5',
         isActive && 'ring-2 ring-teal/40',
         cancelled && 'opacity-70',
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <ModuleStatusChip status={module.status} />
-        <ArrowRight className="size-5 text-muted transition group-hover:translate-x-0.5 group-hover:text-ink" />
-      </div>
-      <h3 className="mt-3 truncate text-lg font-extrabold">{module.name}</h3>
-      <p className="text-sm text-muted">
-        {module.firstDate && module.lastDate ? `${formatDate(module.firstDate)} – ${formatDate(module.lastDate)}` : 'Sin fechas'}
-      </p>
-
-      <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
-        <Metric icon={<Users className="size-4" />} label="Estudiantes" value={module.studentCount} />
-        <Metric icon={<CalendarRange className="size-4" />} label="Clases" value={module.sessionCount} />
-        <Metric
-          icon={<Percent className="size-4" />}
-          label="Asistencia"
-          value={module.attendancePercentage === null ? '—' : `${module.attendancePercentage}%`}
-        />
-      </dl>
-
-      <div className="mt-4 space-y-1 border-t border-line pt-3 text-xs text-muted">
-        {module.teacherName && (
-          <p className="flex items-center gap-1.5">
-            <UserRound className="size-3.5" /> {module.teacherName}
-          </p>
-        )}
-        <p>
-          {module.activatedAt ? `Activado ${formatDateTime(module.activatedAt)}` : 'Nunca se activó'}
-          {module.closedAt && ` · ${cancelled ? 'Cancelado' : 'Cerrado'} ${formatDateTime(module.closedAt)}`}
+      <Link to={`/docente/modulos/${module.id}`} className="group flex flex-1 flex-col p-5">
+        <div className="flex items-start justify-between gap-3">
+          <ModuleStatusChip status={module.status} />
+          <ArrowRight className="size-5 text-muted transition group-hover:translate-x-0.5 group-hover:text-ink" />
+        </div>
+        <h3 id={`module-card-${module.id}`} className="mt-3 truncate text-lg font-extrabold">{module.name}</h3>
+        <p className="text-sm text-muted">
+          {module.firstDate && module.lastDate ? `${formatDate(module.firstDate)} – ${formatDate(module.lastDate)}` : 'Sin fechas'}
         </p>
-      </div>
-    </Link>
+
+        <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
+          <Metric icon={<Users className="size-4" />} label="Estudiantes" value={module.studentCount} />
+          <Metric icon={<CalendarRange className="size-4" />} label="Clases" value={module.sessionCount} />
+          <Metric
+            icon={<Percent className="size-4" />}
+            label="Asistencia"
+            value={module.attendancePercentage === null ? '—' : `${module.attendancePercentage}%`}
+          />
+        </dl>
+
+        <div className="mt-4 space-y-1 border-t border-line pt-3 text-xs text-muted">
+          {module.teacherName && (
+            <p className="flex items-center gap-1.5">
+              <UserRound className="size-3.5" /> {module.teacherName}
+            </p>
+          )}
+          <p>
+            {module.activatedAt ? `Activado ${formatDateTime(module.activatedAt)}` : 'Nunca se activó'}
+            {module.closedAt && ` · ${cancelled ? 'Cancelado' : 'Cerrado'} ${formatDateTime(module.closedAt)}`}
+          </p>
+        </div>
+      </Link>
+      {isActive && <div className="border-t border-line px-5 py-4"><ModuleAccessActions module={module} /></div>}
+    </Card>
   )
 }
 

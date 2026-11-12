@@ -46,7 +46,7 @@ const ACTOR_LABELS: Record<Role, string> = { ADMIN: 'Administrador', TEACHER: 'D
 export function ActivityPage() {
   return (
     <>
-      <PageHeader title="Historial de actividades" description="Acciones de estudiantes y administradores en el módulo activo" />
+      <PageHeader title="Historial de actividades" description="Acciones de estudiantes y docentes en el módulo activo" />
       <ActivityView />
     </>
   )

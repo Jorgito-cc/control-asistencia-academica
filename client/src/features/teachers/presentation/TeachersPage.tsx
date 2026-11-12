@@ -9,7 +9,7 @@ import { Modal } from '../../../shared/ui/Modal'
 import { PageHeader } from '../../../shared/ui/PageHeader'
 import { PageLoader } from '../../../shared/ui/Spinner'
 import { useToast } from '../../../shared/ui/toast'
-import { TeacherAvatar } from '../../profile/presentation/TeacherAvatar'
+import { Avatar } from '../../profile/presentation/Avatar'
 import { useCreateTeacher, useTeachers } from '../application/teachers.queries'
 
 export function TeachersPage() {
@@ -68,7 +68,7 @@ export function TeachersPage() {
           description="Crea una cuenta para que un docente pueda gestionar sus módulos."
         /> : <ul className="divide-y divide-line" aria-label="Docentes de la institución">
           {teachers.data.map(teacher => <li className="flex min-w-0 items-center gap-3 px-4 py-3.5 sm:px-5" key={teacher.id}>
-            <TeacherAvatar name={teacher.fullName} className="size-10 shrink-0 text-sm" />
+            <Avatar name={teacher.fullName} photoUrl={null} className="size-10 shrink-0 text-sm" />
             <div className="min-w-0">
               <p className="font-bold wrap-anywhere">{teacher.fullName}</p>
               <p className="text-sm text-muted wrap-anywhere">{teacher.email}</p>

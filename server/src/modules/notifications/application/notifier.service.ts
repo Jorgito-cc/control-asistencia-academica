@@ -3,7 +3,7 @@ import { Clock } from '../../../shared/application/clock.port';
 import type { AuthUser } from '../../../shared/domain/auth-user';
 import { ForbiddenError } from '../../../shared/domain/errors';
 import { ActiveModuleService } from '../../academic-modules/application/active-module.service';
-import type { NotificationType } from '../domain/notification';
+import type { NotificationAudience, NotificationType } from '../domain/notification';
 import { NotificationRepository } from '../domain/notification.repository';
 
 interface NotifyInput {
@@ -43,7 +43,7 @@ export class Notifier {
   async feed(user: AuthUser, moduleId?: number) {
     const { module, audience } = await this.resolveScope(user, moduleId);
     const scope = { moduleId: module.id, audience, studentId: audience === 'STUDENT' ? user.id : undefined };
-    const lastSeen = await this.repository.lastSeen(audience, user.id, module.id);
+    const lastSeen = await this.repository.lastSeen(user.role, user.id, module.id);
     const [items, unread] = await Promise.all([
       this.repository.feed({ ...scope, limit: FEED_LIMIT }),
       this.repository.countSince(scope, lastSeen),
@@ -52,18 +52,23 @@ export class Notifier {
       module: { id: module.id, name: module.name },
       unread,
       lastSeenAt: lastSeen,
-      items,
+      items: audience === 'ADMIN'
+        ? items.map((item) => ({ ...item, link: item.link?.replace(/^\/admin(?=\/|$)/, '/docente') ?? null }))
+        : items,
     };
   }
 
   async markSeen(user: AuthUser, moduleId?: number) {
-    const { module, audience } = await this.resolveScope(user, moduleId);
-    await this.repository.markSeen(audience, user.id, module.id, this.clock.now());
+    const { module } = await this.resolveScope(user, moduleId);
+    await this.repository.markSeen(user.role, user.id, module.id, this.clock.now());
   }
 
-  private async resolveScope(user: AuthUser, moduleId?: number) {
-    if (user.role === 'ADMIN') {
-      return { module: await this.activeModule.resolve(moduleId), audience: user.role };
+  private async resolveScope(user: AuthUser, moduleId?: number): Promise<{
+    module: Awaited<ReturnType<ActiveModuleService['resolve']>>;
+    audience: NotificationAudience;
+  }> {
+    if (user.role === 'TEACHER') {
+      return { module: await this.activeModule.resolve(moduleId, user.id), audience: 'ADMIN' };
     }
     if (user.role === 'STUDENT' && user.moduleId !== null) {
       const module = await this.activeModule.getActiveById(user.moduleId);

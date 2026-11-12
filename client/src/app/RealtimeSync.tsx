@@ -14,7 +14,7 @@ const DEBOUNCE_MS = 400
 export function RealtimeSync() {
   const { status, user } = useAuth()
   const queryClient = useQueryClient()
-  const userKey = status === 'authenticated' && user ? `${user.role}:${user.id}` : null
+  const userKey = status === 'authenticated' && user && user.role !== 'ADMIN' ? `${user.role}:${user.id}` : null
 
   useEffect(() => {
     if (!userKey) return

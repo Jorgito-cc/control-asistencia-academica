@@ -97,7 +97,7 @@ function JustificationCard({ item }: { item: JustificationItem }) {
     <Card className="flex flex-col p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <Link to={`/admin/estudiantes/${item.student.id}`} className="flex items-center gap-2 font-bold hover:text-brand">
+          <Link to={`/docente/estudiantes/${item.student.id}`} className="flex items-center gap-2 font-bold hover:text-brand">
             <UserRound className="size-4 shrink-0 text-muted" />
             <span className="truncate">{item.student.fullName}</span>
           </Link>

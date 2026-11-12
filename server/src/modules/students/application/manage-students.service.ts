@@ -33,12 +33,12 @@ export class ManageStudentsService {
     private readonly activity: ActivityRecorder,
   ) {}
 
-  async create(admin: AuthUser, input: StudentInput) {
-    const module = await this.activeModule.getActiveOrFail();
+  async create(teacher: AuthUser, input: StudentInput) {
+    const module = await this.activeModule.getActiveOrFail(teacher.id);
     const data = await this.validate(module.id, module.extraFields, input);
     const student = await this.students.create(module.id, data);
     await this.activity.record({
-      actor: admin,
+      actor: teacher,
       action: 'ADD_STUDENT',
       moduleId: module.id,
       studentId: student.id,
@@ -49,8 +49,8 @@ export class ManageStudentsService {
     return student;
   }
 
-  async update(admin: AuthUser, studentId: number, input: StudentInput) {
-    const { module, student } = await this.findInActiveModule(studentId);
+  async update(teacher: AuthUser, studentId: number, input: StudentInput) {
+    const { module, student } = await this.findInActiveModule(teacher.id, studentId);
     const data = await this.validate(module.id, module.extraFields, input, student.id);
     const updated = await this.students.update(student.id, data);
 
@@ -58,7 +58,7 @@ export class ManageStudentsService {
     const extraChanged = JSON.stringify(student.extra) !== JSON.stringify(updated.extra);
     if (changed.length || extraChanged) {
       await this.activity.record({
-        actor: admin,
+        actor: teacher,
         action: 'EDIT_STUDENT',
         moduleId: module.id,
         studentId: student.id,
@@ -74,12 +74,12 @@ export class ManageStudentsService {
     return updated;
   }
 
-  async setActive(admin: AuthUser, studentId: number, active: boolean) {
-    const { module, student } = await this.findInActiveModule(studentId);
+  async setActive(teacher: AuthUser, studentId: number, active: boolean) {
+    const { module, student } = await this.findInActiveModule(teacher.id, studentId);
     if (student.active === active) return student;
     const updated = await this.students.setActive(student.id, active);
     await this.activity.record({
-      actor: admin,
+      actor: teacher,
       action: active ? 'REACTIVATE_STUDENT' : 'DEACTIVATE_STUDENT',
       moduleId: module.id,
       studentId: student.id,
@@ -92,8 +92,8 @@ export class ManageStudentsService {
     return updated;
   }
 
-  private async findInActiveModule(studentId: number) {
-    const module = await this.activeModule.getActiveOrFail();
+  private async findInActiveModule(teacherId: number, studentId: number) {
+    const module = await this.activeModule.getActiveOrFail(teacherId);
     const student = await this.students.findById(studentId);
     if (!student || student.moduleId !== module.id) {
       throw new NotFoundError('El estudiante no pertenece al módulo activo');

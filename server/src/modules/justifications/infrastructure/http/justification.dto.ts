@@ -14,7 +14,7 @@ export class SubmitJustificationDto {
   reason: string;
 }
 
-export class AdminJustificationDto extends SubmitJustificationDto {
+export class TeacherJustificationDto extends SubmitJustificationDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)

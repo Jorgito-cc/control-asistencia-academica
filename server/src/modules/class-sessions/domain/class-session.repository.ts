@@ -19,5 +19,6 @@ export abstract class ClassSessionRepository {
   abstract setCode(id: number, code: string | null): Promise<ClassSession>;
   abstract recordChange(change: NewSessionChange): Promise<SessionChange>;
   abstract listChanges(moduleId: number): Promise<SessionChange[]>;
-  abstract findChangeFile(changeId: number, fileId: number): Promise<{ data: Buffer; mimeType: string; moduleId: number } | null>;
+  abstract findChangeModuleId(changeId: number): Promise<number | null>;
+  abstract findChangeFile(changeId: number, fileId: number): Promise<{ data: Buffer; mimeType: string } | null>;
 }

@@ -41,7 +41,7 @@ export function AttendanceOverviewPage() {
 
 /** Link al detalle del estudiante dentro del módulo activo o de un módulo del historial. */
 const studentHref = (studentId: number, moduleId?: number) =>
-  moduleId ? `/admin/modulos/${moduleId}/estudiantes/${studentId}` : `/admin/estudiantes/${studentId}`
+  moduleId ? `/docente/modulos/${moduleId}/estudiantes/${studentId}` : `/docente/estudiantes/${studentId}`
 
 /**
  * Matriz de asistencias con filtros y exportación. Con `moduleId` muestra un módulo del historial;
@@ -75,7 +75,7 @@ export function AttendanceOverviewView({ moduleId, readOnly = false }: { moduleI
           description={getErrorMessage(overview.error)}
           action={
             moduleId ? undefined : (
-              <Link to="/admin/nuevo-modulo">
+              <Link to="/docente/nuevo-modulo">
                 <Button>Activar un módulo</Button>
               </Link>
             )
@@ -231,7 +231,7 @@ function MatrixView({ data, onEdit, moduleId }: ViewProps) {
                     className="rounded-full transition enabled:hover:ring-2 enabled:hover:ring-brand/30"
                     title={`${row.student.fullName} · ${formatLongDate(record.date)}${
                       record.markedAt && isAttended(record.status) ? ` · ${formatTime(record.markedAt)}` : ''
-                    }${record.source === 'ADMIN' ? ' · corregido por admin' : ''}`}
+                    }${record.source === 'ADMIN' ? ' · corrección manual' : ''}`}
                   >
                     <StatusChip status={record.status} compact />
                   </button>

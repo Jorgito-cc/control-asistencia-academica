@@ -7,7 +7,6 @@ import {
   History,
   LayoutDashboard,
   Library,
-  Presentation,
   Search,
   SquarePlus,
   UserRound,
@@ -22,17 +21,16 @@ import { Modal } from '../../../shared/ui/Modal'
 import { useStudents } from '../../students/application/students.queries'
 
 const PAGES: { to: string; label: string; keywords: string; icon: LucideIcon }[] = [
-  { to: '/admin', label: 'Resumen', keywords: 'inicio dashboard', icon: LayoutDashboard },
-  { to: '/admin/asistencias', label: 'Asistencias', keywords: 'presentes faltas exportar excel', icon: ClipboardList },
-  { to: '/admin/calendario', label: 'Calendario', keywords: 'fechas horario reglas puntualidad compartir', icon: CalendarDays },
-  { to: '/admin/reportes', label: 'Reportes', keywords: 'graficos estadisticas ranking riesgo comparacion', icon: BarChart3 },
-  { to: '/admin/estudiantes', label: 'Estudiantes', keywords: 'lista alumnos', icon: Users },
-  { to: '/admin/docentes', label: 'Docentes', keywords: 'profesores crear cuentas', icon: Presentation },
-  { to: '/admin/justificaciones', label: 'Justificaciones', keywords: 'casos especiales pruebas imagenes faltas', icon: FileClock },
-  { to: '/admin/actividades', label: 'Actividades', keywords: 'historial acciones', icon: History },
-  { to: '/admin/modulos', label: 'Módulos', keywords: 'historial anteriores programado finalizados', icon: Library },
-  { to: '/admin/nuevo-modulo', label: 'Nuevo módulo', keywords: 'importar excel activar programar', icon: SquarePlus },
-  { to: '/admin/perfil', label: 'Mi perfil', keywords: 'docente foto datos', icon: UserRound },
+  { to: '/docente', label: 'Resumen', keywords: 'inicio dashboard', icon: LayoutDashboard },
+  { to: '/docente/asistencias', label: 'Asistencias', keywords: 'presentes faltas exportar excel', icon: ClipboardList },
+  { to: '/docente/calendario', label: 'Calendario', keywords: 'fechas horario reglas puntualidad compartir', icon: CalendarDays },
+  { to: '/docente/reportes', label: 'Reportes', keywords: 'graficos estadisticas ranking riesgo comparacion', icon: BarChart3 },
+  { to: '/docente/estudiantes', label: 'Estudiantes', keywords: 'lista alumnos', icon: Users },
+  { to: '/docente/justificaciones', label: 'Justificaciones', keywords: 'casos especiales pruebas imagenes faltas', icon: FileClock },
+  { to: '/docente/actividades', label: 'Actividades', keywords: 'historial acciones', icon: History },
+  { to: '/docente/modulos', label: 'Módulos', keywords: 'historial anteriores programado finalizados', icon: Library },
+  { to: '/docente/nuevo-modulo', label: 'Nuevo módulo', keywords: 'importar excel activar programar', icon: SquarePlus },
+  { to: '/docente/perfil', label: 'Mi perfil', keywords: 'docente foto datos', icon: UserRound },
 ]
 
 const normalize = (text: string) =>
@@ -64,7 +62,7 @@ function PaletteContent({ onClose }: { onClose: () => void }) {
     ...pages.map((p) => ({ key: p.to, to: p.to, title: p.label, subtitle: 'Página', icon: p.icon })),
     ...studentResults.map((s) => ({
       key: `s-${s.id}`,
-      to: `/admin/estudiantes/${s.id}`,
+      to: `/docente/estudiantes/${s.id}`,
       title: s.fullName,
       subtitle: `Estudiante · Reg. ${s.registrationNumber} · ${s.email}`,
       icon: UserRound,

@@ -17,8 +17,8 @@ export class UpdateExtraFieldsUseCase {
     private readonly activity: ActivityRecorder,
   ) {}
 
-  async execute(admin: AuthUser, fields: ExtraField[]) {
-    const module = await this.activeModule.getActiveOrFail();
+  async execute(teacher: AuthUser, fields: ExtraField[]) {
+    const module = await this.activeModule.getActiveOrFail(teacher.id);
     const taken = new Set(fields.map((f) => f.key).filter(Boolean));
     // Los campos nuevos llegan sin clave: se genera a partir del nombre.
     const withKeys = fields.map((field) => {
@@ -32,7 +32,7 @@ export class UpdateExtraFieldsUseCase {
     const updated = await this.repository.updateExtraFields(module.id, normalized);
 
     await this.activity.record({
-      actor: admin,
+      actor: teacher,
       action: 'UPDATE_FIELDS',
       moduleId: module.id,
       entity: 'module',

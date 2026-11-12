@@ -56,7 +56,7 @@ export function JustificationNote({
       )}
       {adminLink && (
         <Link
-          to={`/admin/justificaciones?estado=${justification.status === 'PENDING' ? 'pendientes' : justification.status === 'APPROVED' ? 'aprobadas' : 'rechazadas'}`}
+          to={`/docente/justificaciones?estado=${justification.status === 'PENDING' ? 'pendientes' : justification.status === 'APPROVED' ? 'aprobadas' : 'rechazadas'}`}
           className="block text-xs font-semibold text-brand hover:underline"
         >
           Ver justificación

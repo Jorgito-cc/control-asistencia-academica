@@ -39,6 +39,7 @@ import { teacherDisplayName } from '../../profile/domain/profile'
 import { SessionChangesHistory } from '../../class-sessions/presentation/SessionChangesHistory'
 import { StudentsView } from '../../students/presentation/StudentsPage'
 import { ModuleStatusChip } from './ModuleStatusChip'
+import { ModuleAccessActions } from './ModuleAccessActions'
 import { ScheduledModuleActions } from './ScheduledModuleActions'
 import { formatScheduled, relativeFromNow } from './schedule-format'
 
@@ -66,7 +67,7 @@ export function ModuleDetailPage() {
           title="No encontramos el módulo"
           description={getErrorMessage(error)}
           action={
-            <Link to="/admin/modulos">
+            <Link to="/docente/modulos">
               <Button variant="secondary">Volver a módulos</Button>
             </Link>
           }
@@ -75,12 +76,12 @@ export function ModuleDetailPage() {
     )
   }
 
-  const readOnly = module.status !== 'ACTIVE' || module.teacherId != null
+  const readOnly = module.status !== 'ACTIVE'
 
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/admin/modulos" className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-ink">
+        <Link to="/docente/modulos" className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-ink">
           <ArrowLeft className="size-4" /> Módulos
         </Link>
         <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
@@ -95,7 +96,7 @@ export function ModuleDetailPage() {
               {module.closedAt && ` · ${module.status === 'CANCELLED' ? 'cancelado' : 'cerrado'} ${formatDateTime(module.closedAt)}`}
             </p>
           </div>
-          {module.status === 'SCHEDULED' && module.teacherId == null && <ScheduledModuleActions module={module} />}
+          {module.status === 'SCHEDULED' && <ScheduledModuleActions module={module} />}
         </div>
       </div>
 
@@ -120,7 +121,10 @@ export function ModuleDetailPage() {
         ))}
       </div>
 
-      {tab === 'resumen' && <SummaryTab module={module} />}
+      {tab === 'resumen' && <>
+        {(module.status === 'ACTIVE' || module.status === 'CLOSED') && <Card className="p-5"><ModuleAccessActions module={module} /></Card>}
+        <SummaryTab module={module} />
+      </>}
       {tab === 'asistencias' && <AttendanceOverviewView moduleId={module.id} readOnly={readOnly} />}
       {tab === 'estudiantes' && <StudentsView moduleId={module.id} />}
       {tab === 'calendario' && <CalendarTab module={module} />}
@@ -131,7 +135,6 @@ export function ModuleDetailPage() {
 
 function StatusBanner({ module }: { module: ActiveModule }) {
   if (module.status === 'CLOSED' || module.status === 'CANCELLED') return <ReadOnlyBanner moduleName={module.name} />
-  if (module.teacherId != null) return <ReadOnlyBanner moduleName={module.name} teacherModule />
   if (module.status === 'SCHEDULED') {
     return (
       <Banner tone="bg-info-soft text-info-ink" icon={<AlarmClock className="size-4" />}>
@@ -143,7 +146,7 @@ function StatusBanner({ module }: { module: ActiveModule }) {
   return (
     <Banner tone="bg-teal-soft text-teal-ink" icon={<Info className="size-4" />}>
       Este es el <strong>módulo activo</strong>. Para modificar asistencias usa{' '}
-      <Link to="/admin/asistencias" className="font-bold underline">
+      <Link to="/docente/asistencias" className="font-bold underline">
         Asistencias
       </Link>
       .

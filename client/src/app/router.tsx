@@ -17,7 +17,6 @@ import { ProfilePage } from '../features/profile/presentation/ProfilePage'
 import { StudentModulePage } from '../features/student-portal/presentation/StudentModulePage'
 import { StudentProfilePage } from '../features/student-portal/presentation/StudentProfilePage'
 import { StudentsPage } from '../features/students/presentation/StudentsPage'
-import { TeacherModulesPage } from '../features/teachers/presentation/TeacherModulesPage'
 import { TeachersPage } from '../features/teachers/presentation/TeachersPage'
 import PlatformAdmin from '../platform/PlatformAdmin'
 import { PlatformLayout, PlatformNotFound } from '../platform/PlatformLayout'
@@ -56,8 +55,20 @@ const attendanceRoutes: RouteObject[] = [
         path: '/docente',
         element: <TeacherLayout />,
         children: [
-          { index: true, element: <TeacherModulesPage /> },
+          { index: true, element: <AdminHomePage /> },
+          { path: 'asistencias', element: <AttendanceOverviewPage /> },
+          { path: 'calendario', element: <ModuleCalendarPage /> },
+          { path: 'estudiantes', element: <StudentsPage /> },
+          { path: 'justificaciones', element: <JustificationsPage /> },
+          { path: 'reportes', element: <ReportsPage /> },
+          { path: 'estudiantes/:studentId', element: <StudentAttendancePage /> },
+          { path: 'actividades', element: <ActivityPage /> },
           { path: 'nuevo-modulo', element: <NewModulePage /> },
+          { path: 'modulos', element: <ModulesPage /> },
+          { path: 'modulos/:moduleId', element: <ModuleDetailPage /> },
+          { path: 'modulos/:moduleId/estudiantes/:studentId', element: <StudentAttendancePage /> },
+          { path: 'perfil', element: <ProfilePage /> },
+          { path: '*', element: <Navigate to="/docente" replace /> },
         ],
       },
     ],
@@ -69,20 +80,9 @@ const attendanceRoutes: RouteObject[] = [
         path: '/admin',
         element: <AdminLayout />,
         children: [
-          { index: true, element: <AdminHomePage /> },
-          { path: 'asistencias', element: <AttendanceOverviewPage /> },
-          { path: 'calendario', element: <ModuleCalendarPage /> },
-          { path: 'estudiantes', element: <StudentsPage /> },
+          { index: true, element: <Navigate to="/admin/docentes" replace /> },
           { path: 'docentes', element: <TeachersPage /> },
-          { path: 'justificaciones', element: <JustificationsPage /> },
-          { path: 'reportes', element: <ReportsPage /> },
-          { path: 'estudiantes/:studentId', element: <StudentAttendancePage /> },
-          { path: 'actividades', element: <ActivityPage /> },
-          { path: 'nuevo-modulo', element: <NewModulePage /> },
-          { path: 'modulos', element: <ModulesPage /> },
-          { path: 'modulos/:moduleId', element: <ModuleDetailPage /> },
-          { path: 'modulos/:moduleId/estudiantes/:studentId', element: <StudentAttendancePage /> },
-          { path: 'perfil', element: <ProfilePage /> },
+          { path: '*', element: <Navigate to="/admin/docentes" replace /> },
         ],
       },
     ],

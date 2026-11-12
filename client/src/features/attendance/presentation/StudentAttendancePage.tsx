@@ -6,7 +6,6 @@ import { Button } from '../../../shared/ui/Button'
 import { Card, CardHeader } from '../../../shared/ui/Card'
 import { EmptyState } from '../../../shared/ui/EmptyState'
 import { PageLoader } from '../../../shared/ui/Spinner'
-import { useModule } from '../../academic-modules/application/academic-modules.queries'
 import { useJustifications } from '../../justifications/application/justifications.queries'
 import { JustificationNote } from '../../justifications/presentation/JustificationNote'
 import { useStudentAttendance } from '../application/attendance.queries'
@@ -20,17 +19,15 @@ import { ReadOnlyBanner } from './ReadOnlyBanner'
 export function StudentAttendancePage() {
   const params = useParams()
   const studentId = Number(params.studentId)
-  // Dentro del historial (/admin/modulos/:moduleId/...) se ve otro módulo, en solo lectura.
+  // Dentro del historial (/docente/modulos/:moduleId/...) se ve otro módulo, en solo lectura.
   const moduleId = params.moduleId ? Number(params.moduleId) : undefined
   const { data, isLoading, error } = useStudentAttendance(studentId, moduleId)
-  const linkedModule = useModule(moduleId ?? 0)
-  const teacherModule = linkedModule.data?.teacherId != null
-  const readOnly = teacherModule || (!!data && data.module.status !== 'ACTIVE') || (moduleId !== undefined && !linkedModule.data)
+  const readOnly = !!data && data.module.status !== 'ACTIVE'
   const justifications = useJustifications({ studentId, moduleId }, Number.isInteger(studentId))
-  const backTo = moduleId ? `/admin/modulos/${moduleId}?tab=estudiantes` : '/admin/asistencias'
+  const backTo = moduleId ? `/docente/modulos/${moduleId}?tab=estudiantes` : '/docente/asistencias'
   const [editing, setEditing] = useState<EditTarget | null>(null)
 
-  if (isLoading || linkedModule.isLoading) return <PageLoader />
+  if (isLoading) return <PageLoader />
   if (error || !data) {
     return (
       <Card>
@@ -39,7 +36,7 @@ export function StudentAttendancePage() {
           title="No encontramos al estudiante"
           description={getErrorMessage(error)}
           action={
-            <Link to="/admin/estudiantes">
+            <Link to="/docente/estudiantes">
               <Button variant="secondary">Volver a estudiantes</Button>
             </Link>
           }
@@ -86,7 +83,7 @@ export function StudentAttendancePage() {
         </div>
       </div>
 
-      {readOnly && linkedModule.data && <ReadOnlyBanner moduleName={data.module.name} teacherModule={teacherModule} />}
+      {readOnly && <ReadOnlyBanner moduleName={data.module.name} />}
       <RiskBanner data={data} audience="admin" />
       <AttendanceStats data={data} />
 

@@ -32,7 +32,7 @@ export function ModuleCalendarPage() {
           title="Todavía no hay un calendario"
           description="Activa un módulo con sus fechas de clase para ver el calendario."
           action={
-            <Link to="/admin/nuevo-modulo">
+            <Link to="/docente/nuevo-modulo">
               <Button>Activar un módulo</Button>
             </Link>
           }

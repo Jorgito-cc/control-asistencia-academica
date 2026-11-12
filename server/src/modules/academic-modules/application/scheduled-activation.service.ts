@@ -35,25 +35,27 @@ export class ScheduledActivationService implements OnApplicationBootstrap, OnMod
 
   async activateDue(): Promise<void> {
     try {
-      const scheduled = await this.repository.findScheduled();
-      if (scheduled?.scheduledFor && scheduled.scheduledFor.getTime() <= this.clock.now().getTime()) {
-        await this.activate(scheduled.id, null);
+      const due = await this.repository.findDueScheduledIds(this.clock.now());
+      for (const moduleId of due) {
+        await this.activate(moduleId, null).catch((error: unknown) => {
+          this.logger.error(`No se pudo activar el módulo programado ${moduleId}`, error);
+        });
       }
     } catch (error) {
       this.logger.error('No se pudo activar el módulo programado', error);
     }
   }
 
-  /** `admin` null indica que lo activó el sistema al llegar la fecha. */
-  async activate(moduleId: number, admin: AuthUser | null): Promise<AcademicModule | null> {
-    const result = await this.repository.activateScheduled(moduleId, this.clock.now());
+  /** Un actor nulo indica activación automática al llegar la fecha. */
+  async activate(moduleId: number, teacher: AuthUser | null): Promise<AcademicModule | null> {
+    const result = await this.repository.activateScheduled(moduleId, this.clock.now(), teacher?.id);
     if (!result) return null;
     const { module, previous } = result;
     this.logger.log(`Módulo programado activado: ${module.name}`);
     await this.activity.record({
-      actor: admin ?? {
+      actor: teacher ?? {
         id: module.createdBy ?? 0,
-        role: 'ADMIN',
+        role: module.teacherId === null ? 'ADMIN' : 'TEACHER',
         name: 'Sistema (activación programada)',
         email: '',
         moduleId: null,
@@ -63,7 +65,7 @@ export class ScheduledActivationService implements OnApplicationBootstrap, OnMod
       previousModuleId: previous?.id,
       entity: 'module',
       entityId: module.id,
-      description: admin
+      description: teacher
         ? `Activó antes de tiempo el módulo programado "${module.name}"`
         : `Se activó automáticamente el módulo programado "${module.name}"`,
       details: { previousModuleId: previous?.id ?? null, previousModuleName: previous?.name ?? null },
@@ -71,9 +73,9 @@ export class ScheduledActivationService implements OnApplicationBootstrap, OnMod
     await this.notifier.toAdmins({
       moduleId: module.id,
       type: 'MODULE_ACTIVATED',
-      title: admin ? `Activaste el módulo "${module.name}"` : `Se activó automáticamente el módulo "${module.name}"`,
+      title: teacher ? `Activaste el módulo "${module.name}"` : `Se activó automáticamente el módulo "${module.name}"`,
       body: previous ? `El módulo "${previous.name}" pasó a Finalizado; sus datos siguen en Módulos.` : null,
-      link: '/admin',
+      link: module.teacherId === null ? '/admin' : '/docente',
     });
     return module;
   }

@@ -153,14 +153,14 @@ function TodayCard({ data, fetchedAt }: { data: MyAttendance; fetchedAt: number 
               className={record.status === 'ATRASO' ? 'bg-warning-soft text-warning-ink' : 'bg-brand-soft text-brand-ink'}
               icon={record.status === 'ATRASO' ? <AlarmClock className="size-7" /> : <CheckCircle2 className="size-7" />}
               title={record.status === 'ATRASO' ? 'Asistencia registrada con atraso' : 'Asistencia registrada'}
-              detail={record.markedAt ? `Marcada a las ${formatTime(record.markedAt)}` : 'Registrada por el administrador'}
+              detail={record.markedAt ? `Marcada a las ${formatTime(record.markedAt)}` : 'Registrada manualmente'}
             />
           ) : record?.status === 'JUSTIFICADO' ? (
             <TodayResult
               className="bg-info-soft text-info-ink"
               icon={<FileCheck2 className="size-7" />}
               title="Falta justificada"
-              detail="El administrador justificó tu inasistencia de hoy"
+              detail="Tu inasistencia de hoy fue justificada"
             />
           ) : record?.status === 'FALTA' ? (
             <TodayResult
@@ -169,7 +169,7 @@ function TodayCard({ data, fetchedAt }: { data: MyAttendance; fetchedAt: number 
               title="Registrado como falta"
               detail={
                 record.source === 'ADMIN'
-                  ? 'El administrador actualizó tu registro de hoy'
+                  ? 'Tu registro de hoy se actualizó manualmente'
                   : `El tiempo para marcar terminó a las ${markWindow?.lateUntil}`
               }
             />

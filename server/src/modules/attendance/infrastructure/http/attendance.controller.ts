@@ -22,6 +22,7 @@ import { UpdateAttendanceUseCase } from '../../application/update-attendance.use
 import { AttendanceOverviewQueryDto, MarkAttendanceDto, UpdateAttendanceDto } from './attendance.dto';
 
 @Controller('attendance')
+@Roles('TEACHER')
 export class AttendanceController {
   constructor(
     private readonly getMyAttendance: GetMyAttendanceUseCase,
@@ -46,12 +47,12 @@ export class AttendanceController {
   }
 
   @Get('students/:studentId/certificate')
-  @Roles('ADMIN')
   async certificate(
+    @CurrentUser() teacher: AuthUser,
     @Param('studentId', ParseIntPipe) studentId: number,
     @Query('moduleId', new ParseIntPipe({ optional: true })) moduleId?: number,
   ) {
-    return pdf(await this.certificates.forAdmin(studentId, moduleId));
+    return pdf(await this.certificates.forTeacher(teacher.id, studentId, moduleId));
   }
 
   @Post('mark')
@@ -62,28 +63,25 @@ export class AttendanceController {
   }
 
   @Get()
-  @Roles('ADMIN')
-  overview(@Query() query: AttendanceOverviewQueryDto) {
-    return this.getOverview.execute(query);
+  overview(@CurrentUser() teacher: AuthUser, @Query() query: AttendanceOverviewQueryDto) {
+    return this.getOverview.execute(teacher.id, query);
   }
 
   @Get('students/:studentId')
-  @Roles('ADMIN')
   student(
+    @CurrentUser() teacher: AuthUser,
     @Param('studentId', ParseIntPipe) studentId: number,
     @Query('moduleId', new ParseIntPipe({ optional: true })) moduleId?: number,
   ) {
-    return this.getStudentAttendance.execute(studentId, moduleId);
+    return this.getStudentAttendance.execute(teacher.id, studentId, moduleId);
   }
 
   @Patch()
-  @Roles('ADMIN')
-  update(@CurrentUser() admin: AuthUser, @Body() body: UpdateAttendanceDto) {
-    return this.updateAttendance.execute(admin, body);
+  update(@CurrentUser() teacher: AuthUser, @Body() body: UpdateAttendanceDto) {
+    return this.updateAttendance.execute(teacher, body);
   }
 
   @Get('export')
-  @Roles('ADMIN', 'TEACHER')
   async export(
     @CurrentUser() user: AuthUser,
     @Query('moduleId', new ParseIntPipe({ optional: true })) moduleId?: number,

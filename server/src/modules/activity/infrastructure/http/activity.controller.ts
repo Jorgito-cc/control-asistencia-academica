@@ -1,15 +1,16 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { Roles } from '../../../../shared/infrastructure/security/decorators';
+import type { AuthUser } from '../../../../shared/domain/auth-user';
+import { CurrentUser, Roles } from '../../../../shared/infrastructure/security/decorators';
 import { ListActivitiesUseCase } from '../../application/list-activities.use-case';
 import { ListActivitiesQueryDto } from './list-activities.query';
 
 @Controller('activity')
-@Roles('ADMIN')
+@Roles('TEACHER')
 export class ActivityController {
   constructor(private readonly listActivities: ListActivitiesUseCase) {}
 
   @Get()
-  list(@Query() query: ListActivitiesQueryDto) {
-    return this.listActivities.execute(query);
+  list(@CurrentUser() teacher: AuthUser, @Query() query: ListActivitiesQueryDto) {
+    return this.listActivities.execute(query, teacher.id);
   }
 }

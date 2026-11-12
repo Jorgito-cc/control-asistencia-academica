@@ -191,8 +191,8 @@ function ReportBody({
                 sub: `${row.summary.faltas} faltas · ${row.summary.points}/${row.summary.maxPoints} puntos`,
                 value: row.summary.percentage!,
                 href: data.module.status === 'ACTIVE'
-                  ? `/admin/estudiantes/${row.student.id}`
-                  : `/admin/modulos/${data.module.id}/estudiantes/${row.student.id}`,
+                  ? `/docente/estudiantes/${row.student.id}`
+                  : `/docente/modulos/${data.module.id}/estudiantes/${row.student.id}`,
               }))}
             />
           )}
@@ -211,7 +211,7 @@ function ModulesComparison() {
       label: m.name,
       sub: `${MODULE_STATUS_LABELS[m.status]} · ${m.studentCount} estudiantes`,
       value: m.attendancePercentage!,
-      href: `/admin/modulos/${m.id}`,
+      href: `/docente/modulos/${m.id}`,
     }))
   if (items.length < 2) return null
   return (

@@ -12,9 +12,9 @@ export interface ActivateModuleInput {
   confirm: boolean;
   /** Fecha y hora de activación programada; sin ella el módulo se activa ahora. */
   scheduledFor?: Date;
-  /** Estudiantes y fechas tal como quedaron en la vista previa (con las correcciones del admin). */
+  /** Estudiantes y fechas tal como quedaron en la vista previa. */
   draft: ImportDraft;
-  /** Columnas extra del Excel que el admin eligió guardar. */
+  /** Columnas extra del Excel que el docente eligió guardar. */
   extraFields: ExtraField[];
   actor: AuthUser;
 }
@@ -42,10 +42,6 @@ export class ActivateModuleUseCase {
 
     const now = this.clock.now();
     const scheduledFor = input.scheduledFor ?? null;
-    const teacherId = input.actor.role === 'TEACHER' ? input.actor.id : null;
-    if (scheduledFor && teacherId !== null) {
-      throw new BusinessRuleError('Los docentes deben activar sus módulos en el momento.');
-    }
     if (scheduledFor && scheduledFor.getTime() <= now.getTime() + 60_000) {
       throw new BusinessRuleError('La fecha programada debe ser al menos un minuto en el futuro');
     }
@@ -53,7 +49,7 @@ export class ActivateModuleUseCase {
     const { module, previous } = await this.repository.activateNew({
       name: input.name.trim(),
       createdBy: input.actor.id,
-      teacherId,
+      teacherId: input.actor.id,
       students,
       sessions: result.sessions,
       extraFields,

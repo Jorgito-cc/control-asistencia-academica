@@ -7,7 +7,7 @@ import { AdminProfileService } from '../../application/admin-profile.use-cases';
 
 /** Perfil del docente asignado al módulo que el usuario puede consultar. */
 @Controller('teacher')
-@Roles('ADMIN', 'TEACHER', 'STUDENT')
+@Roles('TEACHER', 'STUDENT')
 export class TeacherController {
   constructor(
     private readonly activeModule: ActiveModuleService,
@@ -36,10 +36,11 @@ export class TeacherController {
       if (user.moduleId === null) throw new NotFoundError('No hay un módulo activo');
       module = await this.activeModule.getActiveById(user.moduleId);
     } else {
-      module = await this.activeModule.resolve(moduleId, user.role === 'TEACHER' ? user.id : undefined);
+      module = await this.activeModule.resolve(moduleId, user.id);
     }
     if (!module) throw new NotFoundError('No hay un módulo activo');
-    if (!module.createdBy) return null;
-    return this.profiles.get(module.createdBy).catch(() => null);
+    const teacherId = module.teacherId ?? module.createdBy;
+    if (!teacherId) return null;
+    return this.profiles.get(teacherId).catch(() => null);
   }
 }

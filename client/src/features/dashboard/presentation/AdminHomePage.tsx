@@ -36,10 +36,10 @@ import { todayIso } from '../../calendar/domain/calendar'
 import { ClassCodeCard } from '../../class-sessions/presentation/ClassCodeCard'
 import { UsageGuideDialog } from './UsageGuideDialog'
 
-/** Resumen del administrador: compone datos de varias features. */
+/** Resumen del docente y su módulo activo. */
 export function AdminHomePage() {
   const active = useActiveModule()
-  const overview = useAttendanceOverview()
+  const overview = useAttendanceOverview({}, { enabled: Boolean(active.data) })
 
   if (active.isLoading) return <PageLoader />
   const module = active.data ?? null
@@ -84,10 +84,10 @@ function NoModuleHero() {
         </div>
         <h2 className="mt-5 text-xl font-extrabold sm:text-2xl">No tienes un módulo activo</h2>
         <p className="mt-2 text-muted">
-          Activa tu propio módulo o consulta los grupos de los docentes en{' '}
-          <Link to="/admin/modulos" className="font-semibold text-brand-ink underline">Módulos</Link>.
+          Activa un módulo o consulta tus módulos anteriores en{' '}
+          <Link to="/docente/modulos" className="font-semibold text-brand-ink underline">Módulos</Link>.
         </p>
-        <Link to="/admin/nuevo-modulo" className="mt-6">
+        <Link to="/docente/nuevo-modulo" className="mt-6">
           <Button size="lg" icon={<Upload className="size-5" />} className="h-13 shadow-lg shadow-brand/30">
             Activar primer módulo
           </Button>
@@ -197,7 +197,7 @@ function ModuleOverview({ module, data }: { module: ActiveModule; data: Attendan
                 <p className="text-sm text-white/80">
                   marcaron · {todaySession.startTime} a {todaySession.endTime}
                 </p>
-                <Link to="/admin/asistencias" className="mt-3 inline-flex items-center gap-1 text-sm font-semibold hover:underline">
+                <Link to="/docente/asistencias" className="mt-3 inline-flex items-center gap-1 text-sm font-semibold hover:underline">
                   Ver asistencias <ArrowRight className="size-4" />
                 </Link>
               </>
@@ -237,7 +237,7 @@ function ModuleOverview({ module, data }: { module: ActiveModule; data: Attendan
         <CardHeader
           title="Actividad reciente"
           actions={
-            <Link to="/admin/actividades" className="text-sm font-semibold text-brand hover:text-brand-ink">
+            <Link to="/docente/actividades" className="text-sm font-semibold text-brand hover:text-brand-ink">
               Ver todo
             </Link>
           }
@@ -267,17 +267,17 @@ function ModuleOverview({ module, data }: { module: ActiveModule; data: Attendan
 /* ───────────────────────── Accesos rápidos ───────────────────────── */
 
 const SHORTCUTS: { to: string; title: string; text: string; icon: LucideIcon; tone: string }[] = [
-  { to: '/admin/estudiantes', title: 'Estudiantes', text: 'Gestiona la lista de estudiantes.', icon: Users, tone: 'bg-brand-soft text-brand' },
+  { to: '/docente/estudiantes', title: 'Estudiantes', text: 'Gestiona la lista de estudiantes.', icon: Users, tone: 'bg-brand-soft text-brand' },
   {
-    to: '/admin/asistencias',
+    to: '/docente/asistencias',
     title: 'Asistencias',
     text: 'Registra y consulta asistencias.',
     icon: ClipboardList,
     tone: 'bg-teal-soft text-teal',
   },
-  { to: '/admin/actividades', title: 'Actividades', text: 'Revisa el historial de acciones.', icon: BarChart3, tone: 'bg-warning-soft text-warning' },
+  { to: '/docente/actividades', title: 'Actividades', text: 'Revisa el historial de acciones.', icon: BarChart3, tone: 'bg-warning-soft text-warning' },
   {
-    to: '/admin/nuevo-modulo',
+    to: '/docente/nuevo-modulo',
     title: 'Nuevo módulo',
     text: 'Crea un nuevo módulo de clases.',
     icon: SquarePlus,
@@ -313,15 +313,15 @@ function QuickAccess() {
 function QuickGuide({ module, data }: { module: ActiveModule | null; data: AttendanceOverview | undefined }) {
   const marked = data ? data.totals.presentes + data.totals.atrasos > 0 : false
   const steps = [
-    { title: 'Crear módulo', text: 'Configura el periodo de clases', done: module !== null, to: '/admin/nuevo-modulo' },
+    { title: 'Crear módulo', text: 'Configura el periodo de clases', done: module !== null, to: '/docente/nuevo-modulo' },
     {
       title: 'Importar estudiantes',
       text: 'Carga la lista desde un archivo',
       done: (module?.studentCount ?? 0) > 0,
-      to: '/admin/nuevo-modulo',
+      to: '/docente/nuevo-modulo',
     },
-    { title: 'Registrar asistencias', text: 'Marca las asistencias diariamente', done: marked, to: '/admin/asistencias' },
-    { title: 'Consultar reportes', text: 'Revisa el historial y estadísticas', done: false, to: '/admin/actividades' },
+    { title: 'Registrar asistencias', text: 'Marca las asistencias diariamente', done: marked, to: '/docente/asistencias' },
+    { title: 'Consultar reportes', text: 'Revisa el historial y estadísticas', done: false, to: '/docente/actividades' },
   ]
   const current = steps.findIndex((s) => !s.done)
 

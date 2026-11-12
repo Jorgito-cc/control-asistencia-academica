@@ -11,8 +11,8 @@ export interface RealtimeEvent {
 
 /** Puerto de eventos en tiempo real (WebSocket). Un fallo aquí nunca rompe la acción principal. */
 export abstract class RealtimeEvents {
-  /** A todos los administradores conectados. */
-  abstract toAdmins(event: RealtimeEvent): void;
+  /** Al docente a cargo del módulo. */
+  abstract toTeacher(teacherId: number, event: RealtimeEvent): void;
   /** A todos los estudiantes conectados de un módulo. */
   abstract toModuleStudents(moduleId: number, event: RealtimeEvent): void;
   /** A un estudiante (todas sus pestañas o dispositivos). */

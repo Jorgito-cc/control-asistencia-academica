@@ -6,7 +6,7 @@ import { ManageStudentsService } from '../../application/manage-students.service
 import { StudentDto, StudentStatusDto } from './student.dto';
 
 @Controller('students')
-@Roles('ADMIN')
+@Roles('TEACHER')
 export class StudentsController {
   constructor(
     private readonly listStudents: ListStudentsUseCase,
@@ -15,25 +15,26 @@ export class StudentsController {
 
   @Get()
   list(
+    @CurrentUser() teacher: AuthUser,
     @Query('search') search?: string,
     @Query('moduleId', new ParseIntPipe({ optional: true })) moduleId?: number,
     @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
   ) {
-    return this.listStudents.execute(search, moduleId, includeInactive ?? false);
+    return this.listStudents.execute(teacher.id, search, moduleId, includeInactive ?? false);
   }
 
   @Post()
-  create(@CurrentUser() admin: AuthUser, @Body() body: StudentDto) {
-    return this.manage.create(admin, body);
+  create(@CurrentUser() teacher: AuthUser, @Body() body: StudentDto) {
+    return this.manage.create(teacher, body);
   }
 
   @Patch(':id')
-  update(@CurrentUser() admin: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() body: StudentDto) {
-    return this.manage.update(admin, id, body);
+  update(@CurrentUser() teacher: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() body: StudentDto) {
+    return this.manage.update(teacher, id, body);
   }
 
   @Patch(':id/status')
-  setStatus(@CurrentUser() admin: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() body: StudentStatusDto) {
-    return this.manage.setActive(admin, id, body.active);
+  setStatus(@CurrentUser() teacher: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() body: StudentStatusDto) {
+    return this.manage.setActive(teacher, id, body.active);
   }
 }

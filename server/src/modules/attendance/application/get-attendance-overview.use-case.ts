@@ -26,8 +26,8 @@ export class GetAttendanceOverviewUseCase {
     private readonly clock: Clock,
   ) {}
 
-  async execute(filters: AttendanceOverviewFilters = {}) {
-    const module = await this.activeModule.resolve(filters.moduleId);
+  async execute(teacherId: number, filters: AttendanceOverviewFilters = {}) {
+    const module = await this.activeModule.resolve(filters.moduleId, teacherId);
     const context = recordContextFor(module, this.clock);
     const today = context.today;
     const [allStudents, allSessions, attendances] = await Promise.all([

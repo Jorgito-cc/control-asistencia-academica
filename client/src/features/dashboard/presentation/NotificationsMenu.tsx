@@ -34,7 +34,7 @@ function useNotifications() {
       tone: 'bg-brand-soft text-brand-ink',
       title: 'No hay un módulo activo',
       detail: 'Importa estudiantes y fechas para empezar.',
-      to: '/admin/nuevo-modulo',
+      to: '/docente/nuevo-modulo',
       important: true,
     })
   }
@@ -46,7 +46,7 @@ function useNotifications() {
       tone: 'bg-info-soft text-info-ink',
       title: `${pendingJustifications} ${pendingJustifications === 1 ? 'justificación por revisar' : 'justificaciones por revisar'}`,
       detail: 'Estudiantes que enviaron pruebas de una falta o un atraso.',
-      to: '/admin/justificaciones',
+      to: '/docente/justificaciones',
       important: true,
     })
   }
@@ -58,7 +58,7 @@ function useNotifications() {
       tone: 'bg-info-soft text-info-ink',
       title: `"${scheduled.name}" se activará ${relativeFromNow(scheduled.scheduledFor)}`,
       detail: formatScheduled(scheduled.scheduledFor),
-      to: `/admin/modulos/${scheduled.id}`,
+      to: `/docente/modulos/${scheduled.id}`,
       important: false,
     })
   }
@@ -75,7 +75,7 @@ function useNotifications() {
         tone: 'bg-teal-soft text-teal-ink',
         title: `Hoy hay clase de ${session.startTime} a ${session.endTime}`,
         detail: `${totals.presentes + totals.atrasos} de ${totals.total} estudiantes marcaron asistencia.`,
-        to: '/admin/asistencias',
+        to: '/docente/asistencias',
         important: false,
       })
       // Solo hay faltas de hoy cuando se cerró el plazo para marcar.
@@ -86,7 +86,7 @@ function useNotifications() {
           tone: 'bg-alert-soft text-alert-ink',
           title: `${totals.faltas} ${totals.faltas === 1 ? 'estudiante faltó' : 'estudiantes faltaron'} hoy`,
           detail: 'Se cerró el registro de la clase sin su marca.',
-          to: '/admin/asistencias',
+          to: '/docente/asistencias',
           important: true,
         })
       }
@@ -98,7 +98,7 @@ function useNotifications() {
         tone: 'bg-alert-soft text-alert-ink',
         title: `${data.atRiskCount} ${data.atRiskCount === 1 ? 'estudiante en riesgo' : 'estudiantes en riesgo'}`,
         detail: `Por debajo del ${data.rules.minAttendancePercentage}% de asistencia.`,
-        to: '/admin/asistencias',
+        to: '/docente/asistencias',
         important: true,
       })
     }
@@ -109,7 +109,7 @@ function useNotifications() {
         tone: 'bg-warning-soft text-warning-ink',
         title: 'Puntualidad desactivada',
         detail: 'Los estudiantes pueden marcar todo el día de clase.',
-        to: '/admin/calendario',
+        to: '/docente/calendario',
         important: false,
       })
     }

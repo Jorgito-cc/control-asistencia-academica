@@ -13,8 +13,7 @@ export const REALTIME_PATH = '/api/socket.io';
 
 /**
  * Conexión en tiempo real. Valida el mismo token de la API y agrupa a cada usuario en salas:
- * los administradores juntos y cada estudiante en la de su módulo y la suya propia.
- * Las cuentas docentes quedan fuera de esas salas.
+ * los docentes en su sala privada y cada estudiante en la de su módulo y la suya propia.
  */
 @WebSocketGateway({ path: REALTIME_PATH })
 export class RealtimeGateway implements OnGatewayInit {
@@ -39,8 +38,8 @@ export class RealtimeGateway implements OnGatewayInit {
     const token = (socket.handshake.auth as { token?: unknown } | undefined)?.token;
     if (typeof token !== 'string' || !token) throw new Error('Sin token');
     const user: AuthUser = await this.tokens.verify(token);
-    if (user.role === 'ADMIN') {
-      await socket.join(realtimeRooms.admins);
+    if (user.role === 'TEACHER') {
+      await socket.join(realtimeRooms.teacher(user.id));
     } else if (user.role === 'STUDENT') {
       const rooms = [realtimeRooms.student(user.id)];
       if (user.moduleId !== null) rooms.push(realtimeRooms.module(user.moduleId));

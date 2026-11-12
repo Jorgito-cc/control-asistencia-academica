@@ -18,12 +18,12 @@ import type { Justification, JustificationStatus, UploadedImage } from '../domai
 import { ensureStudentCanJustify, ensureValidImages, ensureValidReason } from '../domain/justification-policy';
 import { JustificationRepository } from '../domain/justification.repository';
 
-/** Estados con los que el admin puede aprobar una justificación. */
+/** Estados con los que el docente puede aprobar una justificación. */
 export const APPROVAL_STATUSES: StoredAttendanceStatus[] = ['PRESENTE', 'ATRASO', 'JUSTIFICADO'];
 
 /**
  * Casos especiales de asistencia: el estudiante justifica una falta o un atraso con imágenes de prueba
- * y el admin la aprueba (cambiando la asistencia, con auditoría) o la rechaza.
+ * y el docente del módulo la aprueba (cambiando la asistencia, con auditoría) o la rechaza.
  */
 @Injectable()
 export class JustificationsService {
@@ -85,21 +85,21 @@ export class JustificationsService {
       type: 'JUSTIFICATION_SUBMITTED',
       title: `${student.fullName} envió una justificación`,
       body: `Clase del ${toDisplayDate(record.date)} · ${input.files.length} ${input.files.length === 1 ? 'imagen' : 'imágenes'}: ${reason}`,
-      link: '/admin/justificaciones',
+      link: '/docente/justificaciones',
     });
     return justification;
   }
 
-  /** El admin corrige una asistencia adjuntando pruebas (queda aprobada de inmediato). */
-  async createByAdmin(
-    admin: AuthUser,
+  /** El docente corrige una asistencia adjuntando pruebas (queda aprobada de inmediato). */
+  async createByTeacher(
+    teacher: AuthUser,
     input: { studentId: number; sessionId: number; status: StoredAttendanceStatus; reason: string; files: UploadedImage[] },
   ) {
-    const module = await this.activeModule.getActiveOrFail();
+    const module = await this.activeModule.getActiveOrFail(teacher.id);
     const reason = ensureValidReason(input.reason);
     ensureValidImages(input.files, 1);
     // Primero el cambio de asistencia: valida estudiante, fecha y estado, y queda auditado.
-    const record = await this.updateAttendance.execute(admin, {
+    const record = await this.updateAttendance.execute(teacher, {
       studentId: input.studentId,
       sessionId: input.sessionId,
       status: input.status,
@@ -113,22 +113,22 @@ export class JustificationsService {
       reason,
       status: 'APPROVED',
       resolvedStatus: input.status,
-      reviewedBy: admin.id,
+      reviewedBy: teacher.id,
       now: this.clock.now(),
       files: input.files,
     });
     return { record, justification };
   }
 
-  async approve(admin: AuthUser, id: number, input: { status: StoredAttendanceStatus; comment?: string }) {
+  async approve(teacher: AuthUser, id: number, input: { status: StoredAttendanceStatus; comment?: string }) {
     if (!APPROVAL_STATUSES.includes(input.status)) {
       throw new BusinessRuleError('Para aprobar elige Presente, Atraso o Justificado');
     }
-    const justification = await this.findPendingInActiveModule(id);
+    const justification = await this.findPendingInActiveModule(teacher.id, id);
     const student = await this.students.findById(justification.studentId);
     const comment = input.comment?.trim() || null;
 
-    await this.updateAttendance.execute(admin, {
+    await this.updateAttendance.execute(teacher, {
       studentId: justification.studentId,
       sessionId: justification.sessionId,
       status: input.status,
@@ -139,13 +139,13 @@ export class JustificationsService {
       status: 'APPROVED',
       resolvedStatus: input.status,
       comment,
-      adminId: admin.id,
+      adminId: teacher.id,
       now: this.clock.now(),
     });
-    if (!resolved) throw new ConflictError('Otro administrador ya resolvió esta justificación');
+    if (!resolved) throw new ConflictError('Esta justificación ya fue resuelta');
 
     await this.activity.record({
-      actor: admin,
+      actor: teacher,
       action: 'APPROVE_JUSTIFICATION',
       moduleId: justification.moduleId,
       studentId: justification.studentId,
@@ -165,22 +165,22 @@ export class JustificationsService {
     return resolved;
   }
 
-  async reject(admin: AuthUser, id: number, comment: string) {
+  async reject(teacher: AuthUser, id: number, comment: string) {
     const clean = comment.trim();
     if (!clean) throw new BusinessRuleError('Explica al estudiante por qué se rechaza');
-    const justification = await this.findPendingInActiveModule(id);
+    const justification = await this.findPendingInActiveModule(teacher.id, id);
     const student = await this.students.findById(justification.studentId);
     const resolved = await this.justifications.resolve(id, {
       status: 'REJECTED',
       resolvedStatus: null,
       comment: clean,
-      adminId: admin.id,
+      adminId: teacher.id,
       now: this.clock.now(),
     });
-    if (!resolved) throw new ConflictError('Otro administrador ya resolvió esta justificación');
+    if (!resolved) throw new ConflictError('Esta justificación ya fue resuelta');
 
     await this.activity.record({
-      actor: admin,
+      actor: teacher,
       action: 'REJECT_JUSTIFICATION',
       moduleId: justification.moduleId,
       studentId: justification.studentId,
@@ -200,9 +200,9 @@ export class JustificationsService {
     return resolved;
   }
 
-  /** Bandeja del admin: cada justificación con el estudiante, la clase y el estado actual de la asistencia. */
-  async list(filters: { moduleId?: number; status?: JustificationStatus; studentId?: number }) {
-    const module = await this.activeModule.resolve(filters.moduleId);
+  /** Bandeja del docente con el estudiante, la clase y el estado actual de la asistencia. */
+  async list(teacher: AuthUser, filters: { moduleId?: number; status?: JustificationStatus; studentId?: number }) {
+    const module = await this.activeModule.resolve(filters.moduleId, teacher.id);
     const [items, students, sessions, attendances] = await Promise.all([
       this.justifications.list({ moduleId: module.id, status: filters.status, studentId: filters.studentId }),
       this.students.findByModule(module.id, undefined, true),
@@ -235,20 +235,25 @@ export class JustificationsService {
     return this.justifications.list({ moduleId: module.id, studentId: student.id });
   }
 
-  /** Imagen de una justificación: el admin ve todas; el estudiante, solo las suyas. */
+  /** Las imágenes se limitan al módulo del docente o a la justificación del propio estudiante. */
   async getFile(user: AuthUser, id: number, fileId: number) {
     const justification = await this.justifications.findById(id);
     if (!justification) throw new NotFoundError('La justificación no existe');
-    if (user.role === 'STUDENT' && justification.studentId !== user.id) {
-      throw new ForbiddenError('No puedes ver justificaciones de otros estudiantes');
+    if (user.role === 'TEACHER') {
+      await this.activeModule.resolve(justification.moduleId, user.id);
+    } else {
+      const { module, student } = await this.studentContext.resolve(user);
+      if (justification.moduleId !== module.id || justification.studentId !== student.id) {
+        throw new ForbiddenError('Sin acceso a esta justificación');
+      }
     }
     const file = await this.justifications.findFile(id, fileId);
     if (!file) throw new NotFoundError('La imagen no existe');
     return file;
   }
 
-  private async findPendingInActiveModule(id: number) {
-    const module = await this.activeModule.getActiveOrFail();
+  private async findPendingInActiveModule(teacherId: number, id: number) {
+    const module = await this.activeModule.getActiveOrFail(teacherId);
     const justification = await this.justifications.findById(id);
     if (!justification || justification.moduleId !== module.id) {
       throw new NotFoundError('La justificación no pertenece al módulo activo');

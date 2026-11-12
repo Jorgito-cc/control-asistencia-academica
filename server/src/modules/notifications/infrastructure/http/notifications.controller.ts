@@ -4,7 +4,7 @@ import { CurrentUser, Roles } from '../../../../shared/infrastructure/security/d
 import { Notifier } from '../../application/notifier.service';
 
 @Controller('notifications')
-@Roles('ADMIN', 'STUDENT')
+@Roles('TEACHER', 'STUDENT')
 export class NotificationsController {
   constructor(private readonly notifier: Notifier) {}
 

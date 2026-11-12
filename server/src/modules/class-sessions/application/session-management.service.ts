@@ -43,7 +43,7 @@ export function normalizeClassCode(code: string): string {
 
 /**
  * Cambios en las fechas del módulo activo: cancelar, restaurar, reprogramar o agregar una clase de
- * recuperación. Cada cambio guarda motivo y hasta 3 fotos, y lo ven el admin y los estudiantes.
+ * recuperación. Cada cambio guarda motivo y hasta 3 fotos, visibles en su módulo.
  */
 @Injectable()
 export class SessionManagementService {
@@ -55,26 +55,26 @@ export class SessionManagementService {
     private readonly clock: Clock,
   ) {}
 
-  async cancel(admin: AuthUser, sessionId: number, input: ChangeInput) {
-    const { module, session } = await this.findInActiveModule(sessionId);
+  async cancel(teacher: AuthUser, sessionId: number, input: ChangeInput) {
+    const { module, session } = await this.findInActiveModule(teacher.id, sessionId);
     if (session.status === 'CANCELLED') throw new BusinessRuleError('Esa clase ya está cancelada');
     const reason = this.validate(input);
     const updated = await this.sessions.setStatus(session.id, 'CANCELLED');
-    return this.finish(admin, module.id, updated, 'CANCEL', snapshot(session), null, reason, input.files,
+    return this.finish(teacher, module.id, updated, 'CANCEL', snapshot(session), null, reason, input.files,
       `Canceló la clase del ${toDisplayDate(session.classDate)}`);
   }
 
-  async restore(admin: AuthUser, sessionId: number, input: ChangeInput) {
-    const { module, session } = await this.findInActiveModule(sessionId);
+  async restore(teacher: AuthUser, sessionId: number, input: ChangeInput) {
+    const { module, session } = await this.findInActiveModule(teacher.id, sessionId);
     if (session.status !== 'CANCELLED') throw new BusinessRuleError('Esa clase no está cancelada');
     const reason = this.validate(input);
     const updated = await this.sessions.setStatus(session.id, 'SCHEDULED');
-    return this.finish(admin, module.id, updated, 'RESTORE', null, snapshot(session), reason, input.files,
+    return this.finish(teacher, module.id, updated, 'RESTORE', null, snapshot(session), reason, input.files,
       `Restauró la clase del ${toDisplayDate(session.classDate)}`);
   }
 
-  async reschedule(admin: AuthUser, sessionId: number, data: SessionData, input: ChangeInput) {
-    const { module, session } = await this.findInActiveModule(sessionId);
+  async reschedule(teacher: AuthUser, sessionId: number, data: SessionData, input: ChangeInput) {
+    const { module, session } = await this.findInActiveModule(teacher.id, sessionId);
     if (session.status === 'CANCELLED') throw new BusinessRuleError('Restaura la clase antes de reprogramarla');
     if ((await this.sessions.countAttendances(session.id)) > 0) {
       throw new BusinessRuleError(
@@ -87,22 +87,22 @@ export class SessionManagementService {
     }
     const reason = this.validate(input);
     const updated = await this.sessions.update(session.id, data);
-    return this.finish(admin, module.id, updated, 'RESCHEDULE', snapshot(session), snapshot(updated), reason, input.files,
+    return this.finish(teacher, module.id, updated, 'RESCHEDULE', snapshot(session), snapshot(updated), reason, input.files,
       `Reprogramó la clase del ${toDisplayDate(session.classDate)} al ${toDisplayDate(updated.classDate)}`);
   }
 
-  async add(admin: AuthUser, data: SessionData, input: ChangeInput) {
-    const module = await this.activeModule.getActiveOrFail();
+  async add(teacher: AuthUser, data: SessionData, input: ChangeInput) {
+    const module = await this.activeModule.getActiveOrFail(teacher.id);
     ensureValidSessionData(data, this.clock.today());
     const reason = this.validate(input);
     const created = await this.sessions.create(module.id, data, true);
-    return this.finish(admin, module.id, created, 'ADD', null, snapshot(created), reason, input.files,
+    return this.finish(teacher, module.id, created, 'ADD', null, snapshot(created), reason, input.files,
       `Agregó una clase de recuperación el ${toDisplayDate(created.classDate)}`);
   }
 
   /** Publica o quita el código que los estudiantes deben escribir para marcar en esa clase. */
-  async setCode(admin: AuthUser, sessionId: number, code: string | null) {
-    const { module, session } = await this.findInActiveModule(sessionId);
+  async setCode(teacher: AuthUser, sessionId: number, code: string | null) {
+    const { module, session } = await this.findInActiveModule(teacher.id, sessionId);
     const clean = code === null || code.trim() === '' ? null : normalizeClassCode(code);
     const updated = await this.sessions.setCode(session.id, clean);
     if (clean) {
@@ -116,7 +116,7 @@ export class SessionManagementService {
     }
     // El código en sí no se guarda en el historial para que no quede expuesto.
     await this.activity.record({
-      actor: admin,
+      actor: teacher,
       action: 'SET_CLASS_CODE',
       moduleId: module.id,
       entity: 'session',
@@ -128,9 +128,12 @@ export class SessionManagementService {
     return updated;
   }
 
-  /** Historial de cambios: el admin ve cualquier módulo; el estudiante, solo el suyo activo. */
+  /** Historial de los módulos propios del docente o del módulo activo del estudiante. */
   async listChanges(user: AuthUser, moduleId?: number) {
-    if (user.role === 'ADMIN') return this.sessions.listChanges((await this.activeModule.resolve(moduleId)).id);
+    if (user.role === 'TEACHER') {
+      const module = await this.activeModule.resolve(moduleId, user.id);
+      return this.sessions.listChanges(module.id);
+    }
     if (user.role === 'STUDENT' && moduleId === undefined && user.moduleId !== null) {
       const module = await this.activeModule.getActiveById(user.moduleId);
       if (module) return this.sessions.listChanges(module.id);
@@ -139,9 +142,15 @@ export class SessionManagementService {
   }
 
   async getChangeFile(user: AuthUser, changeId: number, fileId: number) {
+    const moduleId = await this.sessions.findChangeModuleId(changeId);
+    if (moduleId === null) throw new NotFoundError('La imagen no existe');
+    if (user.role === 'TEACHER') {
+      await this.activeModule.resolve(moduleId, user.id);
+    } else if (user.role !== 'STUDENT' || user.moduleId !== moduleId || !(await this.activeModule.getActiveById(moduleId))) {
+      throw new ForbiddenError('Sin acceso a esta imagen');
+    }
     const file = await this.sessions.findChangeFile(changeId, fileId);
     if (!file) throw new NotFoundError('La imagen no existe');
-    if (user.role === 'STUDENT' && user.moduleId !== file.moduleId) throw new ForbiddenError('Sin acceso a esta imagen');
     return file;
   }
 
@@ -150,15 +159,15 @@ export class SessionManagementService {
     return ensureValidReason(input.reason);
   }
 
-  private async findInActiveModule(sessionId: number) {
-    const module = await this.activeModule.getActiveOrFail();
+  private async findInActiveModule(teacherId: number, sessionId: number) {
+    const module = await this.activeModule.getActiveOrFail(teacherId);
     const session = await this.sessions.findById(sessionId);
     if (!session || session.moduleId !== module.id) throw new NotFoundError('La clase no pertenece al módulo activo');
     return { module, session };
   }
 
   private async finish(
-    admin: AuthUser,
+    teacher: AuthUser,
     moduleId: number,
     session: ClassSession,
     action: SessionChangeAction,
@@ -171,7 +180,7 @@ export class SessionManagementService {
     const change = await this.sessions.recordChange({
       moduleId,
       sessionId: session.id,
-      adminId: admin.id,
+      adminId: teacher.id,
       action,
       previous,
       next,
@@ -186,7 +195,7 @@ export class SessionManagementService {
       ADD: 'ADD_SESSION',
     } as const;
     await this.activity.record({
-      actor: admin,
+      actor: teacher,
       action: activityAction[action],
       moduleId,
       entity: 'session',

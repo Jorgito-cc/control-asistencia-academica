@@ -15,7 +15,7 @@ export interface LoginResult {
 
 /** Ruta de inicio según el rol. */
 const homePaths: Record<Role, string> = {
-  ADMIN: '/admin',
+  ADMIN: '/admin/docentes',
   TEACHER: '/docente',
   STUDENT: '/estudiante',
 }

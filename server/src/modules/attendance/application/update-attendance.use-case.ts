@@ -21,7 +21,7 @@ export interface UpdateAttendanceInput {
   allowSame?: boolean;
 }
 
-/** RF-07 / RN-06 / RN-07: el admin corrige cualquier fecha y el cambio queda auditado. */
+/** RF-07 / RN-06 / RN-07: el docente corrige asistencias de su módulo activo. */
 @Injectable()
 export class UpdateAttendanceUseCase {
   constructor(
@@ -33,8 +33,8 @@ export class UpdateAttendanceUseCase {
     private readonly clock: Clock,
   ) {}
 
-  async execute(admin: AuthUser, input: UpdateAttendanceInput) {
-    const module = await this.activeModule.getActiveOrFail();
+  async execute(teacher: AuthUser, input: UpdateAttendanceInput) {
+    const module = await this.activeModule.getActiveOrFail(teacher.id);
     ensureStatusAllowed(module.rules, input.status);
     const [student, session] = await Promise.all([
       this.students.findById(input.studentId),
@@ -63,13 +63,13 @@ export class UpdateAttendanceUseCase {
       sessionId: session.id,
       previousStatus,
       newStatus: input.status,
-      adminId: admin.id,
+      adminId: teacher.id,
       reason,
       now: this.clock.now(),
     });
 
     await this.activity.record({
-      actor: admin,
+      actor: teacher,
       action: 'EDIT_ATTENDANCE',
       moduleId: module.id,
       studentId: student.id,

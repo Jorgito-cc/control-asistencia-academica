@@ -9,9 +9,10 @@ export class ListSessionsUseCase {
     private readonly activeModule: ActiveModuleService,
   ) {}
 
-  async execute(moduleId?: number) {
-    if (moduleId !== undefined) return this.sessions.findByModule((await this.activeModule.resolve(moduleId)).id);
-    const module = await this.activeModule.getActive();
+  async execute(teacherId: number, moduleId?: number) {
+    const module = moduleId === undefined
+      ? await this.activeModule.getActive(teacherId)
+      : await this.activeModule.resolve(moduleId, teacherId);
     return module ? this.sessions.findByModule(module.id) : [];
   }
 }

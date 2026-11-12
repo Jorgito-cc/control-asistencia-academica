@@ -45,7 +45,7 @@ function observation(record: AttendanceRecord) {
     return record.markedAt ? `Autograbado · ${formatTime(record.markedAt)}` : 'Autograbado'
   }
   if (record.source === 'ADMIN') {
-    return record.adminNote ? `Administrador: ${record.adminNote}` : 'Registrado por el administrador'
+    return record.adminNote ? `Corrección manual: ${record.adminNote}` : 'Registrado manualmente'
   }
   if (record.status === 'FALTA') return 'Sin marca'
   if (record.status === 'CANCELADA') return 'Clase cancelada'

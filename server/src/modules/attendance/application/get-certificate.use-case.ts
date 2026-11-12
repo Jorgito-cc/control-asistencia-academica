@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Clock } from '../../../shared/application/clock.port';
 import type { AuthUser } from '../../../shared/domain/auth-user';
-import { ActiveModuleService } from '../../academic-modules/application/active-module.service';
 import type { AcademicModule } from '../../academic-modules/domain/academic-module';
 import { AdminRepository } from '../../admins/domain/admin.repository';
 import type { Student } from '../../students/domain/student';
@@ -10,11 +9,10 @@ import { GetStudentAttendanceUseCase } from './get-student-attendance.use-case';
 import { StudentContextService } from './student-context.service';
 import { StudentHistoryService } from './student-history.service';
 
-/** Constancia de asistencia en PDF: la descarga el admin (de cualquier módulo) o el propio estudiante. */
+/** Constancia PDF para el docente del módulo o el propio estudiante. */
 @Injectable()
 export class GetCertificateUseCase {
   constructor(
-    private readonly activeModule: ActiveModuleService,
     private readonly studentAttendance: GetStudentAttendanceUseCase,
     private readonly studentContext: StudentContextService,
     private readonly history: StudentHistoryService,
@@ -23,10 +21,9 @@ export class GetCertificateUseCase {
     private readonly clock: Clock,
   ) {}
 
-  async forAdmin(studentId: number, moduleId?: number) {
-    const module = await this.activeModule.resolve(moduleId);
-    const view = await this.studentAttendance.execute(studentId, moduleId);
-    return this.render(module, view.student as Student, 'admin');
+  async forTeacher(teacherId: number, studentId: number, moduleId?: number) {
+    const { module, student } = await this.studentAttendance.resolveStudent(teacherId, studentId, moduleId);
+    return this.render(module, student, 'admin');
   }
 
   async forStudent(user: AuthUser) {

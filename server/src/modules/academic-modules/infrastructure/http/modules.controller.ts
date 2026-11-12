@@ -44,7 +44,7 @@ const importFiles = () =>
   );
 
 @Controller('modules')
-@Roles('ADMIN')
+@Roles('TEACHER')
 export class ModulesController {
   constructor(
     private readonly activeModule: ActiveModuleService,
@@ -56,49 +56,45 @@ export class ModulesController {
   ) {}
 
   @Get()
-  @Roles('ADMIN', 'TEACHER')
   list(@CurrentUser() actor: AuthUser) {
-    return this.history.list(actor.role === 'TEACHER' ? actor.id : undefined);
+    return this.history.list(actor.id);
   }
 
   @Get('active')
-  @Roles('ADMIN', 'TEACHER')
   async active(@CurrentUser() actor: AuthUser) {
-    return { module: await this.activeModule.getActiveSummary(actor.role === 'TEACHER' ? actor.id : null) };
+    return { module: await this.activeModule.getActiveSummary(actor.id) };
   }
 
   @Get(':id')
-  @Roles('ADMIN', 'TEACHER')
   async get(@Param('id', ParseIntPipe) id: number, @CurrentUser() actor: AuthUser) {
-    return { module: await this.history.get(id, actor.role === 'TEACHER' ? actor.id : undefined) };
+    return { module: await this.history.get(id, actor.id) };
   }
 
   @Patch(':id/schedule')
   async reschedule(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: RescheduleModuleDto,
-    @CurrentUser() admin: AuthUser,
+    @CurrentUser() teacher: AuthUser,
   ) {
-    return { module: await this.history.reschedule(admin, id, new Date(body.scheduledFor)) };
+    return { module: await this.history.reschedule(teacher, id, new Date(body.scheduledFor)) };
   }
 
   @Post(':id/activate-now')
-  async activateNow(@Param('id', ParseIntPipe) id: number, @CurrentUser() admin: AuthUser) {
-    return { module: await this.history.activateNow(admin, id) };
+  async activateNow(@Param('id', ParseIntPipe) id: number, @CurrentUser() teacher: AuthUser) {
+    return { module: await this.history.activateNow(teacher, id) };
   }
 
   @Delete(':id/schedule')
-  async cancel(@Param('id', ParseIntPipe) id: number, @CurrentUser() admin: AuthUser) {
-    return { module: await this.history.cancel(admin, id) };
+  async cancel(@Param('id', ParseIntPipe) id: number, @CurrentUser() teacher: AuthUser) {
+    return { module: await this.history.cancel(teacher, id) };
   }
 
   @Patch('active/rules')
-  async rules(@Body() body: AttendanceRulesDto, @CurrentUser() admin: AuthUser) {
-    return { module: await this.updateRules.execute(admin, body) };
+  async rules(@Body() body: AttendanceRulesDto, @CurrentUser() teacher: AuthUser) {
+    return { module: await this.updateRules.execute(teacher, body) };
   }
 
   @Post('preview')
-  @Roles('ADMIN', 'TEACHER')
   @HttpCode(200)
   @UseInterceptors(importFiles())
   preview(@UploadedFiles() files: ImportUpload = {}) {
@@ -110,7 +106,6 @@ export class ModulesController {
 
   /** Revalida la vista previa después de corregir filas a mano. */
   @Post('validate')
-  @Roles('ADMIN', 'TEACHER')
   @HttpCode(200)
   validate(@Body() body: ImportDraftDto) {
     const { valid, errors } = validateDraft(body);
@@ -118,7 +113,6 @@ export class ModulesController {
   }
 
   @Post('activate')
-  @Roles('ADMIN', 'TEACHER')
   async activate(@Body() body: ActivateModuleDto, @CurrentUser() actor: AuthUser) {
     const module = await this.activateModule.execute({
       name: body.name,
@@ -132,7 +126,7 @@ export class ModulesController {
   }
 
   @Patch('active/extra-fields')
-  async extraFields(@Body() body: ExtraFieldsDto, @CurrentUser() admin: AuthUser) {
-    return { module: await this.updateExtraFields.execute(admin, body.fields) };
+  async extraFields(@Body() body: ExtraFieldsDto, @CurrentUser() teacher: AuthUser) {
+    return { module: await this.updateExtraFields.execute(teacher, body.fields) };
   }
 }

@@ -18,10 +18,10 @@ export interface ActivateModuleCommand {
 export abstract class AcademicModuleRepository {
   abstract findActive(teacherId?: number | null): Promise<AcademicModule | null>;
   abstract findById(id: number): Promise<AcademicModule | null>;
-  abstract findScheduled(): Promise<AcademicModule | null>;
+  abstract findDueScheduledIds(now: Date): Promise<number[]>;
   abstract summarize(module: AcademicModule): Promise<AcademicModuleSummary>;
-  /** Historial de todos los módulos o del docente indicado. */
-  abstract list(today: string, timeZone: string, teacherId?: number): Promise<ModuleListItem[]>;
+  /** Historial de módulos del docente indicado. */
+  abstract list(today: string, timeZone: string, teacherId: number): Promise<ModuleListItem[]>;
   /**
    * RF-13 / RN-01 / RN-08: crea el módulo con sus estudiantes y fechas en una única transacción.
    * Sin fecha programada cierra el activo del mismo docente (o de administración) y activa el nuevo.
@@ -29,13 +29,14 @@ export abstract class AcademicModuleRepository {
   abstract activateNew(
     command: ActivateModuleCommand,
   ): Promise<{ module: AcademicModule; previous: AcademicModule | null }>;
-  /** Activa un módulo programado y cierra el activo. Devuelve null si ya no estaba programado. */
+  /** Si se omite el docente, la activación automática solo ocurre cuando vence la programación. */
   abstract activateScheduled(
     moduleId: number,
     now: Date,
+    teacherId?: number,
   ): Promise<{ module: AcademicModule; previous: AcademicModule | null } | null>;
-  abstract reschedule(moduleId: number, scheduledFor: Date): Promise<AcademicModule>;
-  abstract cancelScheduled(moduleId: number, now: Date): Promise<AcademicModule>;
+  abstract reschedule(moduleId: number, teacherId: number, scheduledFor: Date): Promise<AcademicModule>;
+  abstract cancelScheduled(moduleId: number, teacherId: number, now: Date): Promise<AcademicModule>;
   abstract updateRules(moduleId: number, rules: AttendanceRules): Promise<AcademicModule>;
   abstract updateExtraFields(moduleId: number, fields: ExtraField[]): Promise<AcademicModule>;
 }

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, EntityManager, IsNull, Repository } from 'typeorm';
+import { DataSource, EntityManager, IsNull, LessThanOrEqual, Repository } from 'typeorm';
 import { DEFAULT_ATTENDANCE_RULES } from '../../../../shared/domain/attendance-rules';
 import type { AttendanceRules } from '../../../../shared/domain/attendance-rules';
 import type { ExtraField } from '../../../../shared/domain/extra-fields';
@@ -16,6 +16,8 @@ import {
 import { AcademicModuleOrmEntity } from './academic-module.orm-entity';
 
 const INSERT_CHUNK = 500;
+const ACTIVE_MODULE_CONFLICT =
+  'Otro proceso activó un módulo al mismo tiempo. Recarga la página e inténtalo de nuevo.';
 
 @Injectable()
 export class TypeormAcademicModuleRepository extends AcademicModuleRepository {
@@ -37,12 +39,16 @@ export class TypeormAcademicModuleRepository extends AcademicModuleRepository {
     return row ? toDomain(row) : null;
   }
 
-  async findScheduled(): Promise<AcademicModule | null> {
-    const row = await this.repo.findOneBy({ status: 'SCHEDULED', teacherId: IsNull() });
-    return row ? toDomain(row) : null;
+  async findDueScheduledIds(now: Date): Promise<number[]> {
+    const rows = await this.repo.find({
+      select: { id: true },
+      where: { status: 'SCHEDULED', scheduledFor: LessThanOrEqual(now) },
+      order: { scheduledFor: 'ASC', id: 'ASC' },
+    });
+    return rows.map((row) => row.id);
   }
 
-  async list(today: string, timeZone: string, teacherId?: number): Promise<ModuleListItem[]> {
+  async list(today: string, timeZone: string, teacherId: number): Promise<ModuleListItem[]> {
     // Clases "realizadas": anteriores a hoy, o hasta el día de cierre si el módulo ya terminó.
     const rows: ListRow[] = await this.dataSource.query(
       `
@@ -67,11 +73,11 @@ export class TypeormAcademicModuleRepository extends AcademicModuleRepository {
       FROM modules m
       JOIN ref ON ref.id = m.id
       LEFT JOIN admins a ON a.id = m.created_by
-      WHERE ($3::int IS NULL OR m.teacher_id = $3)
+      WHERE m.teacher_id = $3
       `,
-      [today, timeZone, teacherId ?? null],
+      [today, timeZone, teacherId],
     );
-    const moduleRows = await this.repo.find(teacherId === undefined ? {} : { where: { teacherId } });
+    const moduleRows = await this.repo.findBy({ teacherId });
     const modules = new Map(moduleRows.map((row) => [row.id, toDomain(row)]));
     return rows
       .map((row) => {
@@ -177,22 +183,23 @@ export class TypeormAcademicModuleRepository extends AcademicModuleRepository {
         throw new ConflictError(
           command.scheduledFor
             ? 'Ya hay un módulo programado. Cancélalo o actívalo antes de programar otro.'
-            : 'Otro proceso activó un módulo al mismo tiempo. Recarga la página e inténtalo de nuevo.',
+            : ACTIVE_MODULE_CONFLICT,
         );
       }
       throw error;
     }
   }
 
-  async activateScheduled(moduleId: number, now: Date) {
+  async activateScheduled(moduleId: number, now: Date, teacherId?: number) {
     return this.dataSource.transaction(async (manager) => {
       const row = await manager.findOne(AcademicModuleOrmEntity, {
-        where: { id: moduleId, teacherId: IsNull() },
+        where: teacherId === undefined ? { id: moduleId } : { id: moduleId, teacherId },
         lock: { mode: 'pessimistic_write' },
       });
       if (!row || row.status !== 'SCHEDULED') return null;
+      if (teacherId === undefined && (!row.scheduledFor || row.scheduledFor > now)) return null;
 
-      const previous = await this.closeActive(manager, null, now);
+      const previous = await this.closeActive(manager, row.teacherId, now);
       await manager.update(
         AcademicModuleOrmEntity,
         { id: moduleId },
@@ -203,21 +210,24 @@ export class TypeormAcademicModuleRepository extends AcademicModuleRepository {
         module: toDomain(module),
         previous: previous ? toDomain(previous) : null,
       };
+    }).catch((error: unknown) => {
+      if (isUniqueViolation(error)) throw new ConflictError(ACTIVE_MODULE_CONFLICT);
+      throw error;
     });
   }
 
-  async reschedule(moduleId: number, scheduledFor: Date): Promise<AcademicModule> {
+  async reschedule(moduleId: number, teacherId: number, scheduledFor: Date): Promise<AcademicModule> {
     const result = await this.repo.update(
-      { id: moduleId, status: 'SCHEDULED', teacherId: IsNull() },
+      { id: moduleId, status: 'SCHEDULED', teacherId },
       { scheduledFor },
     );
     if (!result.affected) throw new BusinessRuleError('El módulo ya no está programado');
     return toDomain(await this.repo.findOneByOrFail({ id: moduleId }));
   }
 
-  async cancelScheduled(moduleId: number, now: Date): Promise<AcademicModule> {
+  async cancelScheduled(moduleId: number, teacherId: number, now: Date): Promise<AcademicModule> {
     const result = await this.repo.update(
-      { id: moduleId, status: 'SCHEDULED', teacherId: IsNull() },
+      { id: moduleId, status: 'SCHEDULED', teacherId },
       { status: 'CANCELLED', closedAt: now },
     );
     if (!result.affected) throw new BusinessRuleError('El módulo ya no está programado');

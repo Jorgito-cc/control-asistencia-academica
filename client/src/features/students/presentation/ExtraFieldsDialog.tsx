@@ -67,7 +67,7 @@ function FieldsEditor({ initial, onClose }: { initial: ExtraField[]; onClose: ()
                 )}
               >
                 {field.visibleToStudent ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
-                {field.visibleToStudent ? 'Visible para el estudiante' : 'Solo administrador'}
+                {field.visibleToStudent ? 'Visible para el estudiante' : 'Solo docente'}
               </button>
               <button
                 type="button"

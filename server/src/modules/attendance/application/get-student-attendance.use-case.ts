@@ -4,7 +4,7 @@ import { ActiveModuleService } from '../../academic-modules/application/active-m
 import { StudentRepository } from '../../students/domain/student.repository';
 import { StudentHistoryService } from './student-history.service';
 
-/** Detalle de asistencia de un estudiante del módulo activo, para el administrador. */
+/** Detalle de asistencia de un estudiante de uno de los módulos del docente. */
 @Injectable()
 export class GetStudentAttendanceUseCase {
   constructor(
@@ -13,12 +13,17 @@ export class GetStudentAttendanceUseCase {
     private readonly history: StudentHistoryService,
   ) {}
 
-  async execute(studentId: number, moduleId?: number) {
-    const module = await this.activeModule.resolve(moduleId);
+  async execute(teacherId: number, studentId: number, moduleId?: number) {
+    const { module, student } = await this.resolveStudent(teacherId, studentId, moduleId);
+    return this.history.build(module, student, 'admin');
+  }
+
+  async resolveStudent(teacherId: number, studentId: number, moduleId?: number) {
+    const module = await this.activeModule.resolve(moduleId, teacherId);
     const student = await this.students.findById(studentId);
     if (!student || student.moduleId !== module.id) {
       throw new NotFoundError('El estudiante no pertenece a este módulo');
     }
-    return this.history.build(module, student, 'admin');
+    return { module, student };
   }
 }

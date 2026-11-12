@@ -95,7 +95,7 @@ function StudentForm({ student, fields, onClose }: { student: Student | null; fi
             key={field.key}
             label={field.label}
             htmlFor={`st-extra-${field.key}`}
-            hint={field.visibleToStudent ? 'Visible para el estudiante' : 'Solo lo ve el administrador'}
+            hint={field.visibleToStudent ? 'Visible para el estudiante' : 'Solo lo ve el docente'}
           >
             <Input
               id={`st-extra-${field.key}`}

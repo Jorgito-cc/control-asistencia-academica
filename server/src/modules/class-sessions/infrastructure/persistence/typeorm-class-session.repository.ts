@@ -100,6 +100,14 @@ export class TypeormClassSessionRepository extends ClassSessionRepository {
     return this.loadChanges({ moduleId });
   }
 
+  async findChangeModuleId(changeId: number): Promise<number | null> {
+    const change = await this.dataSource.getRepository(SessionChangeOrmEntity).findOne({
+      where: { id: changeId },
+      select: { moduleId: true },
+    });
+    return change?.moduleId ?? null;
+  }
+
   async findChangeFile(changeId: number, fileId: number) {
     const file = await this.dataSource
       .getRepository(SessionChangeFileOrmEntity)
@@ -107,8 +115,7 @@ export class TypeormClassSessionRepository extends ClassSessionRepository {
       .addSelect('f.data')
       .where('f.id = :fileId AND f.change_id = :changeId', { fileId, changeId })
       .getOne();
-    const change = await this.dataSource.getRepository(SessionChangeOrmEntity).findOneBy({ id: changeId });
-    return file && change ? { data: file.data, mimeType: file.mimeType, moduleId: change.moduleId } : null;
+    return file ? { data: file.data, mimeType: file.mimeType } : null;
   }
 
   private async loadChanges(where: { id?: number; moduleId?: number }): Promise<SessionChange[]> {

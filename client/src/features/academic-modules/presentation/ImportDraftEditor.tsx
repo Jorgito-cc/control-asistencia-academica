@@ -369,7 +369,7 @@ function ExtrasPanel({
                   )}
                 >
                   {extra.visibleToStudent ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
-                  {extra.visibleToStudent ? 'Visible para el estudiante' : 'Solo administrador'}
+                  {extra.visibleToStudent ? 'Visible para el estudiante' : 'Solo docente'}
                 </button>
               </div>
             )}

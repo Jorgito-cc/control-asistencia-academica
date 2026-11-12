@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import type { AuthUser } from '../../../shared/domain/auth-user';
-import { ActiveModuleService } from '../../academic-modules/application/active-module.service';
 import { ActivityRecorder } from '../../activity/application/activity-recorder.service';
 import { AttendanceExporter } from './attendance-exporter.port';
 import { GetAttendanceOverviewUseCase } from './get-attendance-overview.use-case';
@@ -12,12 +11,10 @@ export class ExportAttendanceUseCase {
     private readonly overview: GetAttendanceOverviewUseCase,
     private readonly exporter: AttendanceExporter,
     private readonly activity: ActivityRecorder,
-    private readonly modules: ActiveModuleService,
   ) {}
 
   async execute(actor: AuthUser, moduleId?: number) {
-    const module = await this.modules.resolve(moduleId, actor.role === 'TEACHER' ? actor.id : undefined);
-    const overview = await this.overview.execute({ moduleId: module.id });
+    const overview = await this.overview.execute(actor.id, { moduleId });
     const file = await this.exporter.export(overview);
     await this.activity.record({
       actor,
