@@ -1,2 +1,7 @@
 # Archivos de bloqueo temporales de LibreOffice
 .~lock.*#
+
+# Configuración local de las aplicaciones
+.env
+.env.*
+!.env.example
